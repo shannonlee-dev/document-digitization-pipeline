@@ -1,0 +1,485 @@
+{
+  "provenance": "synthetic",
+  "images": [
+    {
+      "id": "simple_1",
+      "path": "simple_1.png",
+      "condition": "simple",
+      "notes": "uniform lighting; plain background; near frontal",
+      "corners": [
+        [
+          210.0,
+          65.0
+        ],
+        [
+          590.0,
+          65.0
+        ],
+        [
+          590.0,
+          525.0
+        ],
+        [
+          210.0,
+          525.0
+        ]
+      ]
+    },
+    {
+      "id": "simple_2",
+      "path": "simple_2.png",
+      "condition": "simple",
+      "notes": "uniform lighting; plain background; near frontal",
+      "corners": [
+        [
+          300.0,
+          55.0
+        ],
+        [
+          490.0,
+          60.0
+        ],
+        [
+          495.0,
+          535.0
+        ],
+        [
+          295.0,
+          530.0
+        ]
+      ]
+    },
+    {
+      "id": "simple_3",
+      "path": "simple_3.png",
+      "condition": "simple",
+      "notes": "uniform lighting; plain background; near frontal",
+      "corners": [
+        [
+          170.0,
+          185.0
+        ],
+        [
+          630.0,
+          180.0
+        ],
+        [
+          635.0,
+          410.0
+        ],
+        [
+          165.0,
+          415.0
+        ]
+      ]
+    },
+    {
+      "id": "simple_4",
+      "path": "simple_4.png",
+      "condition": "simple",
+      "notes": "uniform lighting; plain background; near frontal",
+      "corners": [
+        [
+          180.0,
+          85.0
+        ],
+        [
+          565.0,
+          110.0
+        ],
+        [
+          600.0,
+          510.0
+        ],
+        [
+          195.0,
+          495.0
+        ]
+      ]
+    },
+    {
+      "id": "simple_5",
+      "path": "simple_5.png",
+      "condition": "simple",
+      "notes": "uniform lighting; plain background; near frontal",
+      "corners": [
+        [
+          240.0,
+          100.0
+        ],
+        [
+          600.0,
+          70.0
+        ],
+        [
+          570.0,
+          520.0
+        ],
+        [
+          205.0,
+          500.0
+        ]
+      ]
+    },
+    {
+      "id": "shadow_1",
+      "path": "shadow_1.png",
+      "condition": "shadow",
+      "notes": "hard shadow over left half; brightness factor 0.65",
+      "corners": [
+        [
+          220.0,
+          75.0
+        ],
+        [
+          590.0,
+          90.0
+        ],
+        [
+          610.0,
+          525.0
+        ],
+        [
+          200.0,
+          510.0
+        ]
+      ]
+    },
+    {
+      "id": "shadow_2",
+      "path": "shadow_2.png",
+      "condition": "shadow",
+      "notes": "hard shadow over left half; brightness factor 0.4",
+      "corners": [
+        [
+          220.0,
+          75.0
+        ],
+        [
+          590.0,
+          90.0
+        ],
+        [
+          610.0,
+          525.0
+        ],
+        [
+          200.0,
+          510.0
+        ]
+      ]
+    },
+    {
+      "id": "shadow_3",
+      "path": "shadow_3.png",
+      "condition": "shadow",
+      "notes": "hard shadow over left half; brightness factor 0.15",
+      "corners": [
+        [
+          220.0,
+          75.0
+        ],
+        [
+          590.0,
+          90.0
+        ],
+        [
+          610.0,
+          525.0
+        ],
+        [
+          200.0,
+          510.0
+        ]
+      ]
+    },
+    {
+      "id": "shadow_4",
+      "path": "shadow_4.png",
+      "condition": "shadow",
+      "notes": "hard shadow over left half; brightness factor 0.08",
+      "corners": [
+        [
+          220.0,
+          75.0
+        ],
+        [
+          590.0,
+          90.0
+        ],
+        [
+          610.0,
+          525.0
+        ],
+        [
+          200.0,
+          510.0
+        ]
+      ]
+    },
+    {
+      "id": "shadow_5",
+      "path": "shadow_5.png",
+      "condition": "shadow",
+      "notes": "hard shadow over left half; brightness factor 0.03",
+      "corners": [
+        [
+          220.0,
+          75.0
+        ],
+        [
+          590.0,
+          90.0
+        ],
+        [
+          610.0,
+          525.0
+        ],
+        [
+          200.0,
+          510.0
+        ]
+      ]
+    },
+    {
+      "id": "tilted_1",
+      "path": "tilted_1.png",
+      "condition": "tilted",
+      "notes": "in-plane rotation 46 degrees, not calibrated camera tilt",
+      "corners": [
+        [
+          450.3359069824219,
+          49.81747055053711
+        ],
+        [
+          651.7868041992188,
+          258.426025390625
+        ],
+        [
+          349.6640930175781,
+          550.1825561523438
+        ],
+        [
+          148.2131805419922,
+          341.573974609375
+        ]
+      ]
+    },
+    {
+      "id": "tilted_2",
+      "path": "tilted_2.png",
+      "condition": "tilted",
+      "notes": "in-plane rotation 53 degrees, not calibrated camera tilt",
+      "corners": [
+        [
+          480.4502868652344,
+          57.81669616699219
+        ],
+        [
+          654.9766235351562,
+          289.4209899902344
+        ],
+        [
+          319.5497131347656,
+          542.1832885742188
+        ],
+        [
+          145.0233612060547,
+          310.5790100097656
+        ]
+      ]
+    },
+    {
+      "id": "tilted_3",
+      "path": "tilted_3.png",
+      "condition": "tilted",
+      "notes": "in-plane rotation 60 degrees, not calibrated camera tilt",
+      "corners": [
+        [
+          509.3653259277344,
+          69.42631530761719
+        ],
+        [
+          654.3653564453125,
+          320.57366943359375
+        ],
+        [
+          290.6346740722656,
+          530.5736694335938
+        ],
+        [
+          145.63465881347656,
+          279.42633056640625
+        ]
+      ]
+    },
+    {
+      "id": "tilted_4",
+      "path": "tilted_4.png",
+      "condition": "tilted",
+      "notes": "in-plane rotation 67 degrees, not calibrated camera tilt",
+      "corners": [
+        [
+          536.6500244140625,
+          84.47325897216797
+        ],
+        [
+          649.9620361328125,
+          351.419677734375
+        ],
+        [
+          263.3500061035156,
+          515.5267333984375
+        ],
+        [
+          150.0379638671875,
+          248.58033752441406
+        ]
+      ]
+    },
+    {
+      "id": "tilted_5",
+      "path": "tilted_5.png",
+      "condition": "tilted",
+      "notes": "in-plane rotation 74 degrees, not calibrated camera tilt",
+      "corners": [
+        [
+          561.8975219726562,
+          102.73320770263672
+        ],
+        [
+          641.8323974609375,
+          381.4991149902344
+        ],
+        [
+          238.1024627685547,
+          497.26678466796875
+        ],
+        [
+          158.16763305664062,
+          218.5009002685547
+        ]
+      ]
+    },
+    {
+      "id": "complex_1",
+      "path": "complex_1.png",
+      "condition": "complex",
+      "notes": "cluttered background with random lines",
+      "corners": [
+        [
+          220.0,
+          75.0
+        ],
+        [
+          590.0,
+          90.0
+        ],
+        [
+          610.0,
+          525.0
+        ],
+        [
+          200.0,
+          510.0
+        ]
+      ]
+    },
+    {
+      "id": "complex_2",
+      "path": "complex_2.png",
+      "condition": "complex",
+      "notes": "cluttered background with random lines",
+      "corners": [
+        [
+          220.0,
+          75.0
+        ],
+        [
+          590.0,
+          90.0
+        ],
+        [
+          610.0,
+          525.0
+        ],
+        [
+          200.0,
+          510.0
+        ]
+      ]
+    },
+    {
+      "id": "complex_3",
+      "path": "complex_3.png",
+      "condition": "complex",
+      "notes": "cluttered background with random lines; larger bright rectangular distractor",
+      "corners": [
+        [
+          220.0,
+          75.0
+        ],
+        [
+          590.0,
+          90.0
+        ],
+        [
+          610.0,
+          525.0
+        ],
+        [
+          200.0,
+          510.0
+        ]
+      ]
+    },
+    {
+      "id": "complex_4",
+      "path": "complex_4.png",
+      "condition": "complex",
+      "notes": "cluttered background with random lines; larger bright rectangular distractor",
+      "corners": [
+        [
+          220.0,
+          75.0
+        ],
+        [
+          590.0,
+          90.0
+        ],
+        [
+          610.0,
+          525.0
+        ],
+        [
+          200.0,
+          510.0
+        ]
+      ]
+    },
+    {
+      "id": "complex_5",
+      "path": "complex_5.png",
+      "condition": "complex",
+      "notes": "cluttered background with random lines; larger bright rectangular distractor",
+      "corners": [
+        [
+          220.0,
+          75.0
+        ],
+        [
+          590.0,
+          90.0
+        ],
+        [
+          610.0,
+          525.0
+        ],
+        [
+          200.0,
+          510.0
+        ]
+      ]
+    }
+  ]
+}

@@ -1,0 +1,104 @@
+import itertools
+import tempfile
+import unittest
+from pathlib import Path
+from unittest.mock import patch
+
+import cv2
+import numpy as np
+
+from scanner.cli import interactive, main
+from scanner.pipeline import Parameters, order_corners, read_image, save_image, save_scan, scan, warp_document
+from tools.evaluate import corner_error, load_manifest
+
+
+class ScannerTests(unittest.TestCase):
+    def setUp(self):
+        self.image = np.full((400, 500, 3), 30, np.uint8)
+        self.corners = np.float32([[110, 40], [370, 65], [395, 350], [90, 330]])
+        cv2.fillConvexPoly(self.image, self.corners.astype(int), (235, 235, 235))
+        cv2.putText(self.image, 'SCAN', (160, 200), cv2.FONT_HERSHEY_SIMPLEX, 1, (20, 20, 20), 2)
+
+    def test_every_corner_permutation(self):
+        for permutation in itertools.permutations(self.corners):
+            np.testing.assert_allclose(order_corners(permutation), self.corners)
+
+    def test_diamond_and_invalid_corners(self):
+        diamond = [[100, 0], [200, 100], [100, 200], [0, 100]]
+        self.assertEqual(len(np.unique(order_corners(diamond), axis=0)), 4)
+        for points in ([[0, 0]] * 4, [[0, 0], [1, 0], [2, 0], [3, 0]], [[0, 0], [10, 0], [1, 1], [0, 10]]):
+            with self.assertRaises(ValueError):
+                order_corners(points)
+
+    def test_scan_geometry_and_binary(self):
+        original = self.image.copy()
+        result = scan(self.image)
+        self.assertIsNotNone(result.corners)
+        self.assertLess(corner_error(result.corners, self.corners, self.image.shape), .01)
+        self.assertEqual(len(result.stages), 6)
+        self.assertTrue(set(np.unique(result.stages['06_result'])).issubset({0, 255}))
+        np.testing.assert_array_equal(self.image, original)
+        self.assertEqual(warp_document(self.image, self.corners).shape[:2], (291, 306))
+
+    def test_blank_and_invalid_image(self):
+        self.assertIsNone(scan(np.zeros((100, 100, 3), np.uint8)).corners)
+        with self.assertRaises(ValueError):
+            scan(np.zeros((10, 10), np.uint8))
+
+    def test_parameter_validation(self):
+        for kwargs in ({'blur': 2}, {'low': 200, 'high': 100}, {'min_area': 0}, {'block_size': 2}):
+            with self.assertRaises(ValueError):
+                Parameters(**kwargs)
+
+    def test_files_and_headless_cli(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            path = root / '문서.png'
+            save_image(path, self.image)
+            np.testing.assert_array_equal(read_image(path), self.image)
+            self.assertEqual(main(['--image', str(path), '--headless', '--output', str(root / 'result')]), 0)
+            self.assertTrue((root / 'result/06_result.png').exists())
+            save_scan(scan(np.zeros_like(self.image)), root / 'result')
+            self.assertFalse((root / 'result/06_result.png').exists())
+            self.assertEqual(main(['--image', str(root / 'missing.png'), '--headless']), 2)
+            bad = root / 'bad.png'
+            bad.write_text('not an image')
+            with self.assertRaises(ValueError):
+                read_image(bad)
+            with self.assertRaises(ValueError):
+                save_image(root / 'bad.gif', self.image)
+
+    def test_wrong_rectangle_is_not_success(self):
+        self.assertGreater(corner_error([[0, 0], [499, 0], [499, 399], [0, 399]], self.corners, self.image.shape), .03)
+
+    def test_manifest_requires_full_dataset(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / 'manifest.json'
+            path.write_text('{"provenance": "personal", "images": []}')
+            with self.assertRaises(ValueError):
+                load_manifest(path)
+
+    @patch.dict('os.environ', {'DISPLAY': ':test'})
+    def test_camera_failure_releases_device(self):
+        with patch('scanner.cli.cv2.VideoCapture') as factory, patch('scanner.cli.cv2.destroyAllWindows'):
+            factory.return_value.isOpened.return_value = False
+            with self.assertRaises(ValueError):
+                interactive(Parameters(), Path('unused'), camera=0)
+            factory.return_value.release.assert_called_once()
+
+    @patch.dict('os.environ', {'DISPLAY': ':test'})
+    def test_trackbar_reprocess_and_save(self):
+        calls = [0]
+        def position(name, window):
+            if name == 'Blur radius':
+                calls[0] += 1
+            return {'Blur radius': 2 if calls[0] == 1 else 3, 'Canny low': 50, 'Canny high': 150}[name]
+        with tempfile.TemporaryDirectory() as directory, patch('scanner.cli.cv2.namedWindow'), patch('scanner.cli.cv2.createTrackbar') as tracks, patch('scanner.cli.cv2.getTrackbarPos', side_effect=position), patch('scanner.cli.cv2.waitKey', side_effect=[ord('s'), ord('q')]), patch('scanner.cli.cv2.getWindowProperty', return_value=1), patch('scanner.cli.cv2.destroyAllWindows'), patch('scanner.cli.show') as show:
+            interactive(Parameters(), Path(directory), image=self.image)
+            self.assertEqual(tracks.call_count, 3)
+            self.assertEqual(show.call_count, 2)
+            self.assertTrue((Path(directory) / '06_result.png').exists())
+
+
+if __name__ == '__main__':
+    unittest.main()

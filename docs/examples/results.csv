@@ -1,0 +1,61 @@
+id,condition,preset,detected,success,max_corner_error,notes
+simple_1,simple,default,True,True,0.0,uniform lighting; plain background; near frontal
+simple_1,simple,sensitive,True,True,0.0,uniform lighting; plain background; near frontal
+simple_1,simple,strict,True,True,0.001,uniform lighting; plain background; near frontal
+simple_2,simple,default,True,True,0.0,uniform lighting; plain background; near frontal
+simple_2,simple,sensitive,True,True,0.0,uniform lighting; plain background; near frontal
+simple_2,simple,strict,True,True,0.001,uniform lighting; plain background; near frontal
+simple_3,simple,default,True,True,0.0,uniform lighting; plain background; near frontal
+simple_3,simple,sensitive,True,True,0.0,uniform lighting; plain background; near frontal
+simple_3,simple,strict,True,True,0.0,uniform lighting; plain background; near frontal
+simple_4,simple,default,True,True,0.0,uniform lighting; plain background; near frontal
+simple_4,simple,sensitive,True,True,0.0,uniform lighting; plain background; near frontal
+simple_4,simple,strict,True,True,0.001,uniform lighting; plain background; near frontal
+simple_5,simple,default,True,True,0.0,uniform lighting; plain background; near frontal
+simple_5,simple,sensitive,True,True,0.0,uniform lighting; plain background; near frontal
+simple_5,simple,strict,True,True,0.001,uniform lighting; plain background; near frontal
+shadow_1,shadow,default,True,True,0.0,hard shadow over left half; brightness factor 0.65
+shadow_1,shadow,sensitive,True,True,0.0,hard shadow over left half; brightness factor 0.65
+shadow_1,shadow,strict,True,True,0.001,hard shadow over left half; brightness factor 0.65
+shadow_2,shadow,default,False,False,,hard shadow over left half; brightness factor 0.4
+shadow_2,shadow,sensitive,True,False,0.19906280517578126,hard shadow over left half; brightness factor 0.4
+shadow_2,shadow,strict,True,False,0.19909043884277344,hard shadow over left half; brightness factor 0.4
+shadow_3,shadow,default,False,False,,hard shadow over left half; brightness factor 0.15
+shadow_3,shadow,sensitive,True,False,0.20015994262695314,hard shadow over left half; brightness factor 0.15
+shadow_3,shadow,strict,True,False,0.20012246704101563,hard shadow over left half; brightness factor 0.15
+shadow_4,shadow,default,False,False,,hard shadow over left half; brightness factor 0.08
+shadow_4,shadow,sensitive,True,False,0.20015994262695314,hard shadow over left half; brightness factor 0.08
+shadow_4,shadow,strict,False,False,,hard shadow over left half; brightness factor 0.08
+shadow_5,shadow,default,True,False,0.20015994262695314,hard shadow over left half; brightness factor 0.03
+shadow_5,shadow,sensitive,True,False,0.20015994262695314,hard shadow over left half; brightness factor 0.03
+shadow_5,shadow,strict,False,False,,hard shadow over left half; brightness factor 0.03
+tilted_1,tilted,default,True,True,0.0017596820592880248,"in-plane rotation 46 degrees, not calibrated camera tilt"
+tilted_1,tilted,sensitive,True,True,0.0017596820592880248,"in-plane rotation 46 degrees, not calibrated camera tilt"
+tilted_1,tilted,strict,True,True,0.0017596820592880248,"in-plane rotation 46 degrees, not calibrated camera tilt"
+tilted_2,tilted,default,True,True,0.0005794817209243775,"in-plane rotation 53 degrees, not calibrated camera tilt"
+tilted_2,tilted,sensitive,True,True,0.0005794817209243775,"in-plane rotation 53 degrees, not calibrated camera tilt"
+tilted_2,tilted,strict,True,True,0.0019498252868652343,"in-plane rotation 53 degrees, not calibrated camera tilt"
+tilted_3,tilted,default,True,True,0.000855526328086853,"in-plane rotation 60 degrees, not calibrated camera tilt"
+tilted_3,tilted,sensitive,True,True,0.000855526328086853,"in-plane rotation 60 degrees, not calibrated camera tilt"
+tilted_3,tilted,strict,True,True,0.000855526328086853,"in-plane rotation 60 degrees, not calibrated camera tilt"
+tilted_4,tilted,default,True,True,0.0011235235929489137,"in-plane rotation 67 degrees, not calibrated camera tilt"
+tilted_4,tilted,sensitive,True,True,0.0006324178576469421,"in-plane rotation 67 degrees, not calibrated camera tilt"
+tilted_4,tilted,strict,True,True,0.0011235235929489137,"in-plane rotation 67 degrees, not calibrated camera tilt"
+tilted_5,tilted,default,True,True,0.0009714789390563965,"in-plane rotation 74 degrees, not calibrated camera tilt"
+tilted_5,tilted,sensitive,True,True,0.0009714789390563965,"in-plane rotation 74 degrees, not calibrated camera tilt"
+tilted_5,tilted,strict,False,False,,"in-plane rotation 74 degrees, not calibrated camera tilt"
+complex_1,complex,default,True,True,0.0,cluttered background with random lines
+complex_1,complex,sensitive,True,True,0.0,cluttered background with random lines
+complex_1,complex,strict,True,True,0.001,cluttered background with random lines
+complex_2,complex,default,True,True,0.0,cluttered background with random lines
+complex_2,complex,sensitive,True,True,0.0,cluttered background with random lines
+complex_2,complex,strict,True,True,0.001,cluttered background with random lines
+complex_3,complex,default,True,False,0.20497073364257812,cluttered background with random lines; larger bright rectangular distractor
+complex_3,complex,sensitive,True,False,0.20568179321289062,cluttered background with random lines; larger bright rectangular distractor
+complex_3,complex,strict,True,False,0.20543125915527344,cluttered background with random lines; larger bright rectangular distractor
+complex_4,complex,default,True,False,0.20497073364257812,cluttered background with random lines; larger bright rectangular distractor
+complex_4,complex,sensitive,True,False,0.20497073364257812,cluttered background with random lines; larger bright rectangular distractor
+complex_4,complex,strict,True,False,0.20497073364257812,cluttered background with random lines; larger bright rectangular distractor
+complex_5,complex,default,True,False,0.20568179321289062,cluttered background with random lines; larger bright rectangular distractor
+complex_5,complex,sensitive,True,False,0.20568179321289062,cluttered background with random lines; larger bright rectangular distractor
+complex_5,complex,strict,True,False,0.20568179321289062,cluttered background with random lines; larger bright rectangular distractor
