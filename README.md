@@ -21,11 +21,10 @@ main.py                  CLI 진입점
 scanner/pipeline.py      설정, 입출력, 전처리, 검출, 좌표 정렬, 변환, 이진화
 scanner/cli.py           이미지/웹캠 실행, 트랙바와 화면, 저장 키 처리
 tools/                  아래 두 명령을 python -m tools.… 형태로 실행
-  generate_samples.py    정답 좌표를 가진 합성 이미지 20장 생성
-  evaluate.py            60회 평가, CSV/JSON, 히스토그램과 단계별 이미지 출력
+  evaluate.py            개인 이미지 20장 평가, CSV/JSON, 히스토그램과 단계별 이미지 출력
 tests/test_scanner.py   기하, 파일 처리, CLI, GUI 제어 흐름 테스트
 docs/analysis.md        실측 분석과 한계
-docs/examples/          생성 데이터와 평가 증거
+  data/personal/          사용자가 촬영한 문서 이미지 20장
 ```
 
 파이프라인 함수는 GUI 없이 사용할 수 있습니다. 환경별 설정은 불변 `Parameters`로 분리해 CLI와 평가에서 같은 값을 재사용합니다. 새로운 배경 대응은 `detect_document`에서 후보 선택 규칙을 수정하고, 같은 manifest에 대해 전후 결과를 비교하면 됩니다. 별도 플러그인 계층은 없습니다.
@@ -38,7 +37,7 @@ Python 3.8 이상, OpenCV 4.5 이상, NumPy 1.20 이상이 필요합니다. 검�
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
-python main.py --image docs/examples/dataset/simple_4.png
+python main.py --image "data/personal/image_cv (1).png"
 ```
 
 Windows에서는 `python -m venv .venv`와 `.venv\Scripts\activate`를 사용합니다.
@@ -46,8 +45,7 @@ Windows에서는 `python -m venv .venv`와 `.venv\Scripts\activate`를 사용합
 GUI 없는 서버·Colab에서는 다음 명령으로 중간 단계와 최종 이미지를 저장합니다.
 
 ```bash
-python main.py --image docs/examples/dataset/simple_4.png --headless --output outputs/scan
-python main.py --image docs/examples/dataset/shadow_2.png --headless --blur 3 --low 10 --high 40 --output outputs/shadow
+python main.py --image "data/personal/image_cv (1).png" --headless --output outputs/scan
 ```
 
 `--output`은 출력 디렉터리입니다. 두 번째 예시는 그림자 오검출을 재현하며, 사각형 검출만으로 실제 문서가 맞다는 보장은 없습니다. CLI는 검출 후보 유무를 판단하고, 정답과의 비교는 평가 도구가 담당합니다.
@@ -73,8 +71,6 @@ python main.py --webcam 0 --output outputs/camera
 블러 커널은 `2 × radius + 1`입니다. 실제 high는 `max(low + 1, high 트랙바 값)`으로 정규화합니다. 이벤트 루프가 약 30ms 간격으로 값을 읽고 변경 시 전체 파이프라인을 다시 실행합니다. 웹캠은 프레임마다 처리하므로 실제 처리 속도는 해상도와 장비에 따라 달라집니다. 검출 실패 시 변환 창에 `No document found`를 표시합니다.
 
 GUI에서는 `s`, headless에서는 실행 즉시 `01_original.png`부터 `06_result.png`까지 저장합니다. 같은 출력 경로는 덮어씁니다. 검출 실패 시 진단 단계 1–4만 남기고 이전 변환 결과 5–6을 제거합니다. `save_image(path, image)`는 PNG/JPEG를 지원하고 인코딩과 파일 저장을 확인합니다. 오류 시 메시지와 종료 코드 2, 성공 시 0을 반환합니다.
-
-![처리 단계 예시](docs/examples/simple_4_default.jpg)
 
 ## 핵심 함수와 원리
 
@@ -103,15 +99,14 @@ GUI에서는 `s`, headless에서는 실행 즉시 `01_original.png`부터 `06_re
 ## 데이터와 평가 재현
 
 ```bash
-python -m tools.generate_samples --output docs/examples/dataset
-python -m tools.evaluate docs/examples/dataset/manifest.json --output outputs/evaluation --epsilon-sweep
+python -m tools.evaluate data/personal --output outputs/evaluation
 python -m unittest discover -s tests -v
 ```
 
-기본 이미지 20장 × 설정 3개 = 60회 실행합니다. 평가 폴더에는 `results.csv`, `report.md`, `parameters.json`, `eda.json`, `histograms.png`와 이미지별 `01`–`20` 디렉터리가 생성됩니다. 각 이미지 디렉터리에는 `histogram.png`와 설정별 모든 처리 단계, `preview.jpg`가 있습니다.
+`data/personal` 디렉터리의 PNG/JPEG 20장 × 설정 3개 = 60회 실행합니다. 개인 이미지에는 정답 꼭짓점이 없으므로 성공은 문서 사각형 검출과 변환 결과 생성 여부로 판정합니다. 평가 폴더에는 `results.csv`, `report.md`, `parameters.json`, `eda.json`, `histograms.png`와 이미지별 `01`–`20` 디렉터리가 생성됩니다.
 
-manifest의 `provenance`는 `synthetic`, `personal`, `lms` 중 하나입니다. `images`에는 고유한 `id`, manifest 기준 상대 `path`, `condition`, 조명·각도·배경을 적은 `notes`, 원본 픽셀 좌표 `corners` 네 점을 기록합니다. 조건은 `simple`, `shadow`, `tilted`, `complex` 각각 5장이어야 합니다. 정답 좌표는 순서와 무관하며 이미지를 보고 문서의 네 모서리에 표시해야 합니다. 생성 데이터는 투영에 사용한 점을 그대로 정답으로 저장합니다.
+manifest를 직접 사용할 때 `provenance`는 `personal`로 지정할 수 있습니다. `python -m tools.evaluate data/personal`처럼 이미지 디렉터리를 넘기면 PNG/JPEG 20장을 자동으로 읽습니다. 개인 이미지에는 정답 `corners`가 없어도 되며, 이 경우 검출·변환 성공 여부만 기록합니다.
 
 성공 판정은 **네 점의 최대 대응 오차 / 이미지 대각선 ≤ 0.03이고 변환 결과가 존재**하는 기하학적 대리 기준입니다. 꼭짓점만 근사하게 맞아도 흐린 글씨·비율 왜곡은 남을 수 있으므로 최종 제출에서는 변환 이미지 육안 검토가 필요합니다. 탐지 자체와 정답 검출을 CSV의 `detected`, `success`로 구분합니다.
 
-상세 분석은 [분석 보고서](docs/analysis.md), 전체 측정표는 [평가 결과](docs/examples/report.md)를 참고하세요. 합성 데이터는 실제 촬영/LMS 데이터 요구를 대체했다는 의미가 아닙니다. 데스크톱 창 표시·물리 카메라 동작은 이 서버에서 확인하지 못했으며 GUI 제어 흐름과 자원 해제는 모의 테스트로 검증했습니다.
+상세 분석은 [분석 보고서](docs/analysis.md)를 참고하세요. 데스크톱 창 표시·물리 카메라 동작은 이 서버에서 확인하지 못했으며 GUI 제어 흐름과 자원 해제는 모의 테스트로 검증했습니다.
