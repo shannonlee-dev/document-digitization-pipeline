@@ -8,7 +8,8 @@ import cv2
 import numpy as np
 
 from scanner.cli import interactive, main
-from scanner.pipeline import Parameters, order_corners, read_image, save_image, save_scan, scan, warp_document
+from scanner.io import read_image, save_image, save_scan
+from scanner.pipeline import Parameters, order_corners, scan, warp_document
 from tools.evaluate import corner_error, load_manifest
 
 

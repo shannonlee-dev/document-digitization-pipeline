@@ -9,7 +9,8 @@ from pathlib import Path
 import cv2
 import numpy as np
 
-from scanner.pipeline import Parameters, order_corners, read_image, save_image, save_scan, scan
+from scanner.io import read_image, save_image, save_scan
+from scanner.pipeline import Parameters, order_corners, scan
 
 GROUPS = ('simple', 'shadow', 'tilted', 'complex')
 PRESETS = {

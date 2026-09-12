@@ -8,7 +8,8 @@ from pathlib import Path
 import cv2
 import numpy as np
 
-from .pipeline import Parameters, read_image, save_scan, scan
+from .io import read_image, save_scan
+from .pipeline import Parameters, scan
 
 
 def show(result):
