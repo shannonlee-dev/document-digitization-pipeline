@@ -126,7 +126,7 @@ def _interactive(
                     continue
 
                 save_scan(result, output)
-                print('Saved: {}'.format(output.resolve()))
+                print(f'Saved: {output.resolve()}')
     finally:
         cv2.destroyAllWindows()
 
@@ -163,10 +163,10 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
                     'No document quadrilateral found. '
                     'Diagnostic stages saved; adjust parameters.'
                 )
-            print('Saved: {}'.format(args.output.resolve()))
+            print(f'Saved: {args.output.resolve()}')
         else:
             _interactive(params, args.output, image=image)
         return 0
     except (ValueError, OSError, cv2.error) as error:
-        print('Error: {}'.format(error), file=sys.stderr)
+        print(f'Error: {error}', file=sys.stderr)
         return 2

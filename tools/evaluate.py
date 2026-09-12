@@ -133,7 +133,7 @@ def _load_manifest(path: Union[Path, str]) -> Dict[str, Any]:
                 or np.any(corners[:, 1] >= image.shape[0])
             ):
                 raise ValueError(
-                    'Ground-truth corners lie outside image: {}'.format(case['id'])
+                    f"Ground-truth corners lie outside image: {case['id']}"
                 )
     return manifest
 
@@ -223,7 +223,7 @@ def evaluate(
 
     for index, case in enumerate(manifest['images']):
         image = read_image(case['_path'])
-        case_output = output / '{:02d}_{}'.format(index + 1, case['id'])
+        case_output = output / f"{index + 1:02d}_{case['id']}"
         gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
         hist = np.bincount(gray.ravel(), minlength=GRAYSCALE_LEVELS) / gray.size
         histograms[case['condition']].append(hist)
@@ -283,14 +283,14 @@ def evaluate(
     has_ground_truth = all('corners' in case for case in manifest['images'])
     metric = (
         'Automatic geometric proxy: maximum matched corner distance / '
-        'image diagonal <= {:.3f}, and warp produced.'.format(tolerance)
+        f'image diagonal <= {tolerance:.3f}, and warp produced.'
         if has_ground_truth else
         'Personal-image proxy: document quadrilateral detected and warp produced.'
     )
     lines = [
         '# Evaluation results',
         '',
-        'Provenance: **{}**'.format(manifest['provenance']),
+        f"Provenance: **{manifest['provenance']}**",
         '',
         metric,
         'This does not certify text quality or physical aspect ratio. '
@@ -304,10 +304,10 @@ def evaluate(
         for group in groups:
             subset = [r for r in rows if r['preset'] == preset and r['condition'] == group]
             successes = sum(r['success'] for r in subset)
-            lines.append('| {} | {} | {} | {} | {} | {:.0%} |'.format(
-                preset, group, len(subset),
-                successes, len(subset) - successes, successes / len(subset),
-            ))
+            lines.append(
+                f'| {preset} | {group} | {len(subset)} | {successes} | '
+                f'{len(subset) - successes} | {successes / len(subset):.0%} |'
+            )
 
     lines.extend([
         '',
@@ -327,13 +327,11 @@ def evaluate(
                 ('detected' if result['detected'] else 'not detected')
                 if not has_ground_truth else (
                     'not detected' if result['max_corner_error'] is None
-                    else '{:.4f}'.format(result['max_corner_error'])
+                    else f"{result['max_corner_error']:.4f}"
                 )
             )
-            cells.append('{} ({})'.format('PASS' if result['success'] else 'FAIL', detail))
-        lines.append('| {} | {} | {} |'.format(
-            case['id'], case['condition'], ' | '.join(cells),
-        ))
+            cells.append(f"{'PASS' if result['success'] else 'FAIL'} ({detail})")
+        lines.append(f"| {case['id']} | {case['condition']} | {' | '.join(cells)} |")
 
     (output / 'report.md').write_text('\n'.join(lines) + '\n', encoding='utf-8')
     return rows
@@ -382,7 +380,7 @@ def main() -> None:
                 writer.writeheader()
                 writer.writerows(rows)
     except (ValueError, KeyError, OSError, cv2.error) as error:
-        parser.exit(2, 'Error: {}\n'.format(error))
+        parser.exit(2, f'Error: {error}\n')
 
 
 if __name__ == '__main__':

@@ -33,12 +33,12 @@ def save_image(path: Union[Path, str], image: np.ndarray) -> None:
 
     ok, encoded = cv2.imencode(path.suffix, image)
     if not ok:
-        raise OSError('Image encoding failed: {}'.format(path))
+        raise OSError(f'Image encoding failed: {path}')
 
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_bytes(encoded.tobytes())
     if not path.is_file() or path.stat().st_size == 0:
-        raise OSError('Image save failed: {}'.format(path))
+        raise OSError(f'Image save failed: {path}')
 
 
 def save_scan(result: 'Scan', output: Union[Path, str]) -> None:
