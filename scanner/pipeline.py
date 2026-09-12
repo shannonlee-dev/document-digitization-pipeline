@@ -58,23 +58,35 @@ class Scan:
 
 def order_corners(points):
     """중심 기준으로 정렬한 뒤 좌상단 점부터 시작하도록 회전합니다.
-
-    각도 정렬은 마름모에서 합·차 최솟값을 따로 찾을 때 생기는 중복을
-    피합니다. 이미지 좌표의 y축은 아래를 향하므로 atan2 오름차순은
-    좌상·우상·우하·좌하 순서가 됩니다. 동률은 y, x 순으로 결정합니다.
     """
     points = np.asarray(points, dtype=np.float32).reshape(-1, 2)
+
     if points.shape != (DOCUMENT_CORNER_COUNT, 2) or not np.isfinite(points).all():
         raise ValueError('Exactly four finite corners are required')
     if len(np.unique(points, axis=0)) != DOCUMENT_CORNER_COUNT:
         raise ValueError('Corners must be distinct')
+
     center = points.mean(axis=0)
     angles = np.arctan2(points[:, 1] - center[1], points[:, 0] - center[0])
     ordered = points[np.argsort(angles)]
-    start = min(range(DOCUMENT_CORNER_COUNT), key=lambda i: (float(ordered[i].sum()), float(ordered[i, 1]), float(ordered[i, 0])))
+    start = min(
+        range(DOCUMENT_CORNER_COUNT),
+        key=lambda i: (
+            float(ordered[i].sum()),
+            float(ordered[i, 1]),
+            float(ordered[i, 0]),
+        ),
+    )
     ordered = np.roll(ordered, -start, axis=0)
+
     edges = np.roll(ordered, -1, axis=0) - ordered
-    cross = edges[:, 0] * np.roll(edges[:, 1], -1) - edges[:, 1] * np.roll(edges[:, 0], -1)
+
+    # 다각형을 이루는 모든 벡터(x, y)에 대해, y벡터와 x벡터의 90도
+    # 회전 벡터의 내적 부호가 항상 같으면(전부 0보다 크거나 전부 0보다 작으면) convex다.
+    cross = (
+        edges[:, 0] * np.roll(edges[:, 1], -1)
+        - edges[:, 1] * np.roll(edges[:, 0], -1)
+    )
     if np.any(cross <= CORNER_CROSS_TOLERANCE):
         raise ValueError('Corners must form a nondegenerate convex quadrilateral')
     return ordered
@@ -89,10 +101,15 @@ def preprocess(image, params):
 def detect_document(edges, params):
     contours, _ = cv2.findContours(edges, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
     area_limit = edges.shape[0] * edges.shape[1] * params.min_area
+
     for contour in sorted(contours, key=cv2.contourArea, reverse=True):
         if cv2.contourArea(contour) < area_limit:
             break
-        polygon = cv2.approxPolyDP(contour, params.epsilon * cv2.arcLength(contour, True), True)
+        polygon = cv2.approxPolyDP(
+            contour,
+            params.epsilon * cv2.arcLength(contour, True),
+            True,
+        )
         if len(polygon) == DOCUMENT_CORNER_COUNT and cv2.isContourConvex(polygon):
             try:
                 return order_corners(polygon.reshape(DOCUMENT_CORNER_COUNT, 2))
@@ -103,28 +120,69 @@ def detect_document(edges, params):
 
 def warp_document(image, corners):
     tl, tr, br, bl = order_corners(corners)
-    width = max(MIN_WARP_SIZE, int(round(max(np.linalg.norm(tr - tl), np.linalg.norm(br - bl)))))
-    height = max(MIN_WARP_SIZE, int(round(max(np.linalg.norm(bl - tl), np.linalg.norm(br - tr)))))
-    destination = np.float32([[0, 0], [width - 1, 0], [width - 1, height - 1], [0, height - 1]])
+    width = max(
+        MIN_WARP_SIZE,
+        int(round(max(np.linalg.norm(tr - tl), np.linalg.norm(br - bl)))),
+    )
+    height = max(
+        MIN_WARP_SIZE,
+        int(round(max(np.linalg.norm(bl - tl), np.linalg.norm(br - tr)))),
+    )
+
+    destination = np.float32([
+        [0, 0],
+        [width - 1, 0],
+        [width - 1, height - 1],
+        [0, height - 1],
+    ])
     transform = cv2.getPerspectiveTransform(np.float32([tl, tr, br, bl]), destination)
     return cv2.warpPerspective(image, transform, (width, height))
 
 
 def scan(image, params=None):
     params = params or Parameters()
-    if image is None or image.dtype != np.uint8 or image.ndim != 3 or image.shape[2] != 3 or min(image.shape[:2]) < MIN_IMAGE_SIZE:
-        raise ValueError(f'Expected a uint8 BGR image of shape (H, W, 3), at least {MIN_IMAGE_SIZE}x{MIN_IMAGE_SIZE}')
+    if (
+        image is None
+        or image.dtype != np.uint8
+        or image.ndim != 3
+        or image.shape[2] != 3
+        or min(image.shape[:2]) < MIN_IMAGE_SIZE
+    ):
+        raise ValueError(
+            f'Expected a uint8 BGR image of shape (H, W, 3), '
+            f'at least {MIN_IMAGE_SIZE}x{MIN_IMAGE_SIZE}'
+        )
+
     prepared = preprocess(image, params)
     edges = cv2.Canny(prepared, params.low, params.high)
     corners = detect_document(edges, params)
     overlay = image.copy()
-    stages = {STAGE_ORIGINAL: image, STAGE_PREPROCESSED: prepared, STAGE_EDGES: edges, STAGE_CONTOURS: overlay}
+    stages = {
+        STAGE_ORIGINAL: image,
+        STAGE_PREPROCESSED: prepared,
+        STAGE_EDGES: edges,
+        STAGE_CONTOURS: overlay,
+    }
+
     if corners is not None:
-        cv2.polylines(overlay, [corners.astype(np.int32)], True, CONTOUR_COLOR, CONTOUR_THICKNESS)
+        cv2.polylines(
+            overlay, [corners.astype(np.int32)], True,
+            CONTOUR_COLOR, CONTOUR_THICKNESS,
+        )
         for index, point in enumerate(corners.astype(int)):
-            cv2.putText(overlay, str(index), tuple(point), cv2.FONT_HERSHEY_SIMPLEX, CORNER_LABEL_SCALE, CORNER_LABEL_COLOR, CORNER_LABEL_THICKNESS)
+            cv2.putText(
+                overlay, str(index), tuple(point),
+                cv2.FONT_HERSHEY_SIMPLEX, CORNER_LABEL_SCALE,
+                CORNER_LABEL_COLOR, CORNER_LABEL_THICKNESS,
+            )
+
         warped = warp_document(image, corners)
         gray = cv2.cvtColor(warped, cv2.COLOR_BGR2GRAY)
         stages[STAGE_WARPED] = warped
-        stages[STAGE_RESULT] = cv2.adaptiveThreshold(gray, MAX_PIXEL_VALUE, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, params.block_size, params.threshold_c)
+        stages[STAGE_RESULT] = cv2.adaptiveThreshold(
+            gray, MAX_PIXEL_VALUE,
+            cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY,
+            params.block_size, params.threshold_c,
+        )
+
     return Scan(stages, corners)

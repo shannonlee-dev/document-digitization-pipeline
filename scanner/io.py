@@ -4,7 +4,12 @@ from pathlib import Path
 import cv2
 import numpy as np
 
-from .constants import MIN_IMAGE_SIZE, OUTPUT_STAGES, STAGE_IMAGE_SUFFIX, SUPPORTED_IMAGE_SUFFIXES
+from .constants import (
+    MIN_IMAGE_SIZE,
+    OUTPUT_STAGES,
+    STAGE_IMAGE_SUFFIX,
+    SUPPORTED_IMAGE_SUFFIXES,
+)
 
 
 def read_image(path):
@@ -21,9 +26,11 @@ def save_image(path, image):
     path = Path(path)
     if path.suffix.lower() not in SUPPORTED_IMAGE_SUFFIXES:
         raise ValueError('Output must be PNG or JPEG')
+
     ok, encoded = cv2.imencode(path.suffix, image)
     if not ok:
         raise OSError('Image encoding failed: {}'.format(path))
+
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_bytes(encoded.tobytes())
     if not path.is_file() or path.stat().st_size == 0:
@@ -34,6 +41,7 @@ def save_scan(result, output):
     output = Path(output)
     for name, image in result.stages.items():
         save_image(output / (name + STAGE_IMAGE_SUFFIX), image)
+
     # 재실행이 실패했을 때 이전 결과가 남아 성공처럼 보이지 않게 합니다.
     for name in OUTPUT_STAGES:
         stale = output / (name + STAGE_IMAGE_SUFFIX)

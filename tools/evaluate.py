@@ -60,29 +60,55 @@ PRESETS = {
 def corner_error(predicted, expected, shape):
     if predicted is None:
         return None
+
     predicted, expected = order_corners(predicted), order_corners(expected)
     # 순환 매칭으로 마름모의 임의 시작점 차이를 제거합니다.
-    distances = [np.max(np.linalg.norm(predicted - np.roll(expected, k, axis=0), axis=1)) for k in range(DOCUMENT_CORNER_COUNT)]
+    distances = [
+        np.max(np.linalg.norm(predicted - np.roll(expected, k, axis=0), axis=1))
+        for k in range(DOCUMENT_CORNER_COUNT)
+    ]
     return float(min(distances) / np.hypot(*shape[:2]))
 
 
 def load_manifest(path):
     path = Path(path)
     if path.is_dir():
-        image_paths = sorted(p for p in path.iterdir() if p.suffix.lower() in SUPPORTED_IMAGE_SUFFIXES)
+        image_paths = sorted(
+            p for p in path.iterdir()
+            if p.suffix.lower() in SUPPORTED_IMAGE_SUFFIXES
+        )
         if len(image_paths) != REQUIRED_IMAGE_COUNT:
-            raise ValueError(f'Personal image directory requires exactly {REQUIRED_IMAGE_COUNT} PNG or JPEG images')
-        return {'provenance': 'personal', 'images': [
-            {'id': image.stem, 'path': image.name, 'condition': 'personal',
-             'notes': 'User-provided screenshot; ground-truth corners not supplied', '_path': image.resolve()}
-            for image in image_paths
-        ]}
+            raise ValueError(
+                f'Personal image directory requires exactly '
+                f'{REQUIRED_IMAGE_COUNT} PNG or JPEG images'
+            )
+        return {
+            'provenance': 'personal',
+            'images': [
+                {
+                    'id': image.stem,
+                    'path': image.name,
+                    'condition': 'personal',
+                    'notes': 'User-provided screenshot; ground-truth corners not supplied',
+                    '_path': image.resolve(),
+                }
+                for image in image_paths
+            ],
+        }
+
     manifest = json.loads(path.read_text(encoding='utf-8'))
     if manifest.get('provenance') not in SUPPORTED_PROVENANCES:
         raise ValueError('provenance must be synthetic, personal, or lms')
     cases = manifest.get('images', [])
-    if len(cases) != REQUIRED_IMAGE_COUNT or any(sum(c.get('condition') == group for c in cases) != IMAGES_PER_GROUP for group in GROUPS):
-        raise ValueError(f'Manifest requires {REQUIRED_IMAGE_COUNT} images, exactly {IMAGES_PER_GROUP} per condition')
+    if len(cases) != REQUIRED_IMAGE_COUNT or any(
+        sum(c.get('condition') == group for c in cases) != IMAGES_PER_GROUP
+        for group in GROUPS
+    ):
+        raise ValueError(
+            f'Manifest requires {REQUIRED_IMAGE_COUNT} images, '
+            f'exactly {IMAGES_PER_GROUP} per condition'
+        )
+
     ids, paths = set(), set()
     for case in cases:
         if case['id'] in ids or case['path'] in paths:
@@ -91,13 +117,20 @@ def load_manifest(path):
             raise ValueError('Each image needs capture-condition notes')
         ids.add(case['id'])
         paths.add(case['path'])
+
         image_path = (path.parent / case['path']).resolve()
         case['_path'] = image_path
         image = read_image(image_path)
         if 'corners' in case:
             corners = order_corners(case['corners'])
-            if np.any(corners < 0) or np.any(corners[:, 0] >= image.shape[1]) or np.any(corners[:, 1] >= image.shape[0]):
-                raise ValueError('Ground-truth corners lie outside image: {}'.format(case['id']))
+            if (
+                np.any(corners < 0)
+                or np.any(corners[:, 0] >= image.shape[1])
+                or np.any(corners[:, 1] >= image.shape[0])
+            ):
+                raise ValueError(
+                    'Ground-truth corners lie outside image: {}'.format(case['id'])
+                )
     return manifest
 
 
@@ -111,14 +144,24 @@ def histogram_plot(histograms):
             HISTOGRAM_X_ORIGIN + np.arange(GRAYSCALE_LEVELS) * HISTOGRAM_X_SCALE,
             HISTOGRAM_Y_BASELINE - y * HISTOGRAM_HEIGHT,
         )).astype(np.int32)
-        cv2.polylines(canvas, [points], False, HISTOGRAM_COLORS[index], HISTOGRAM_LINE_THICKNESS)
+        cv2.polylines(
+            canvas, [points], False,
+            HISTOGRAM_COLORS[index], HISTOGRAM_LINE_THICKNESS,
+        )
         cv2.putText(
             canvas, group,
-            (HISTOGRAM_LEGEND_POSITION[0] + index * HISTOGRAM_LEGEND_SPACING, HISTOGRAM_LEGEND_POSITION[1]),
-            cv2.FONT_HERSHEY_SIMPLEX, PLOT_TEXT_SCALE, HISTOGRAM_COLORS[index], PLOT_TEXT_THICKNESS,
+            (
+                HISTOGRAM_LEGEND_POSITION[0] + index * HISTOGRAM_LEGEND_SPACING,
+                HISTOGRAM_LEGEND_POSITION[1],
+            ),
+            cv2.FONT_HERSHEY_SIMPLEX, PLOT_TEXT_SCALE,
+            HISTOGRAM_COLORS[index], PLOT_TEXT_THICKNESS,
         )
+
     cv2.putText(
-        canvas, f'Grayscale 0 -> {MAX_PIXEL_VALUE}; log(1 + probability * {HISTOGRAM_LOG_SCALE})',
+        canvas,
+        f'Grayscale 0 -> {MAX_PIXEL_VALUE}; '
+        f'log(1 + probability * {HISTOGRAM_LOG_SCALE})',
         HISTOGRAM_CAPTION_POSITION, cv2.FONT_HERSHEY_SIMPLEX,
         PLOT_TEXT_SCALE, PLOT_TEXT_COLOR, PLOT_TEXT_THICKNESS,
     )
@@ -128,74 +171,161 @@ def histogram_plot(histograms):
 def stage_preview(result):
     tiles = []
     for name in SCAN_STAGES:
-        tile = np.full((PREVIEW_TILE_HEIGHT, PREVIEW_TILE_WIDTH, 3), PREVIEW_BACKGROUND, np.uint8)
+        tile = np.full(
+            (PREVIEW_TILE_HEIGHT, PREVIEW_TILE_WIDTH, 3),
+            PREVIEW_BACKGROUND, np.uint8,
+        )
         image = result.stages.get(name)
         if image is not None:
             if image.ndim == 2:
                 image = cv2.cvtColor(image, cv2.COLOR_GRAY2BGR)
-            scale = min(PREVIEW_TILE_WIDTH / image.shape[1], (PREVIEW_TILE_HEIGHT - PREVIEW_HEADER_HEIGHT) / image.shape[0])
-            image = cv2.resize(image, (max(1, round(image.shape[1] * scale)), max(1, round(image.shape[0] * scale))))
-            tile[PREVIEW_HEADER_HEIGHT:PREVIEW_HEADER_HEIGHT + image.shape[0], :image.shape[1]] = image
+            scale = min(
+                PREVIEW_TILE_WIDTH / image.shape[1],
+                (PREVIEW_TILE_HEIGHT - PREVIEW_HEADER_HEIGHT) / image.shape[0],
+            )
+            image = cv2.resize(image, (
+                max(1, round(image.shape[1] * scale)),
+                max(1, round(image.shape[0] * scale)),
+            ))
+            tile[
+                PREVIEW_HEADER_HEIGHT:PREVIEW_HEADER_HEIGHT + image.shape[0],
+                :image.shape[1],
+            ] = image
+
         cv2.putText(
             tile, name if image is not None else name + ': missing', PREVIEW_LABEL_POSITION,
             cv2.FONT_HERSHEY_SIMPLEX, PLOT_TEXT_SCALE, PLOT_TEXT_COLOR, PLOT_TEXT_THICKNESS,
         )
         tiles.append(tile)
-    return np.vstack((np.hstack(tiles[:PREVIEW_COLUMNS]), np.hstack(tiles[PREVIEW_COLUMNS:])))
+
+    return np.vstack((
+        np.hstack(tiles[:PREVIEW_COLUMNS]),
+        np.hstack(tiles[PREVIEW_COLUMNS:]),
+    ))
 
 
 def evaluate(manifest_path, output, tolerance=DEFAULT_TOLERANCE):
     if not 0 < tolerance < 1:
         raise ValueError('tolerance must be in (0, 1)')
+
     manifest = load_manifest(manifest_path)
     output.mkdir(parents=True, exist_ok=True)
     rows, eda = [], []
     histograms = defaultdict(list)
+
     for index, case in enumerate(manifest['images']):
         image = read_image(case['_path'])
         gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
         hist = np.bincount(gray.ravel(), minlength=GRAYSCALE_LEVELS) / gray.size
         histograms[case['condition']].append(hist)
-        save_image(output / '{:02d}'.format(index + 1) / 'histogram.png', histogram_plot({case['id']: [hist]}))
-        eda.append({'id': case['id'], 'condition': case['condition'], 'mean': float(gray.mean()), 'std': float(gray.std()), 'p05': float(np.percentile(gray, BRIGHTNESS_PERCENTILES[0])), 'p95': float(np.percentile(gray, BRIGHTNESS_PERCENTILES[1])), 'histogram': hist.tolist()})
+        save_image(
+            output / '{:02d}'.format(index + 1) / 'histogram.png',
+            histogram_plot({case['id']: [hist]}),
+        )
+        eda.append({
+            'id': case['id'],
+            'condition': case['condition'],
+            'mean': float(gray.mean()),
+            'std': float(gray.std()),
+            'p05': float(np.percentile(gray, BRIGHTNESS_PERCENTILES[0])),
+            'p95': float(np.percentile(gray, BRIGHTNESS_PERCENTILES[1])),
+            'histogram': hist.tolist(),
+        })
+
         for preset, params in PRESETS.items():
             result = scan(image, params)
-            error = corner_error(result.corners, case['corners'], image.shape) if 'corners' in case else None
+            error = (
+                corner_error(result.corners, case['corners'], image.shape)
+                if 'corners' in case else None
+            )
             success = error is not None and error <= tolerance and STAGE_RESULT in result.stages
             if 'corners' not in case:
                 success = result.corners is not None and STAGE_RESULT in result.stages
-            rows.append({'id': case['id'], 'condition': case['condition'], 'preset': preset, 'detected': result.corners is not None, 'success': success, 'max_corner_error': error, 'notes': case['notes']})
+            rows.append({
+                'id': case['id'],
+                'condition': case['condition'],
+                'preset': preset,
+                'detected': result.corners is not None,
+                'success': success,
+                'max_corner_error': error,
+                'notes': case['notes'],
+            })
+
             save_scan(result, output / '{:02d}'.format(index + 1) / preset)
-            save_image(output / '{:02d}'.format(index + 1) / preset / 'preview.jpg', stage_preview(result))
+            save_image(
+                output / '{:02d}'.format(index + 1) / preset / 'preview.jpg',
+                stage_preview(result),
+            )
+
     with (output / 'results.csv').open('w', newline='', encoding='utf-8') as stream:
         writer = csv.DictWriter(stream, fieldnames=list(rows[0]), lineterminator='\n')
         writer.writeheader()
         writer.writerows(rows)
-    (output / 'eda.json').write_text(json.dumps(eda, indent=2, ensure_ascii=False), encoding='utf-8')
-    (output / 'parameters.json').write_text(json.dumps({k: asdict(v) for k, v in PRESETS.items()}, indent=2), encoding='utf-8')
+    (output / 'eda.json').write_text(
+        json.dumps(eda, indent=2, ensure_ascii=False),
+        encoding='utf-8',
+    )
+    (output / 'parameters.json').write_text(
+        json.dumps({k: asdict(v) for k, v in PRESETS.items()}, indent=2),
+        encoding='utf-8',
+    )
     save_image(output / 'histograms.png', histogram_plot(histograms))
+
     has_ground_truth = all('corners' in case for case in manifest['images'])
-    metric = ('Automatic geometric proxy: maximum matched corner distance / image diagonal <= {:.3f}, and warp produced.'.format(tolerance)
-              if has_ground_truth else
-              'Personal-image proxy: document quadrilateral detected and warp produced.')
-    lines = ['# Evaluation results', '', 'Provenance: **{}**'.format(manifest['provenance']), '',
-             metric,
-             'This does not certify text quality or physical aspect ratio. Inspect saved warps before final submission.', '',
-             '| Preset | Condition | Total | Success | Failure | Rate |', '|---|---|---:|---:|---:|---:|']
+    metric = (
+        'Automatic geometric proxy: maximum matched corner distance / '
+        'image diagonal <= {:.3f}, and warp produced.'.format(tolerance)
+        if has_ground_truth else
+        'Personal-image proxy: document quadrilateral detected and warp produced.'
+    )
+    lines = [
+        '# Evaluation results',
+        '',
+        'Provenance: **{}**'.format(manifest['provenance']),
+        '',
+        metric,
+        'This does not certify text quality or physical aspect ratio. '
+        'Inspect saved warps before final submission.',
+        '',
+        '| Preset | Condition | Total | Success | Failure | Rate |',
+        '|---|---|---:|---:|---:|---:|',
+    ]
     groups = sorted({case['condition'] for case in manifest['images']})
     for preset in PRESETS:
         for group in groups:
             subset = [r for r in rows if r['preset'] == preset and r['condition'] == group]
             successes = sum(r['success'] for r in subset)
-            lines.append('| {} | {} | {} | {} | {} | {:.0%} |'.format(preset, group, len(subset), successes, len(subset) - successes, successes / len(subset)))
-    lines.extend(['', '## Per-image parameter comparison', '', '| Image | Condition | default | sensitive | strict |', '|---|---|---|---|---|'])
+            lines.append('| {} | {} | {} | {} | {} | {:.0%} |'.format(
+                preset, group, len(subset),
+                successes, len(subset) - successes, successes / len(subset),
+            ))
+
+    lines.extend([
+        '',
+        '## Per-image parameter comparison',
+        '',
+        '| Image | Condition | default | sensitive | strict |',
+        '|---|---|---|---|---|',
+    ])
     for case in manifest['images']:
-        values = [next(r for r in rows if r['id'] == case['id'] and r['preset'] == p) for p in PRESETS]
+        values = [
+            next(r for r in rows if r['id'] == case['id'] and r['preset'] == p)
+            for p in PRESETS
+        ]
         cells = []
         for result in values:
-            detail = ('detected' if result['detected'] else 'not detected') if not has_ground_truth else ('not detected' if result['max_corner_error'] is None else '{:.4f}'.format(result['max_corner_error']))
+            detail = (
+                ('detected' if result['detected'] else 'not detected')
+                if not has_ground_truth else (
+                    'not detected' if result['max_corner_error'] is None
+                    else '{:.4f}'.format(result['max_corner_error'])
+                )
+            )
             cells.append('{} ({})'.format('PASS' if result['success'] else 'FAIL', detail))
-        lines.append('| {} | {} | {} |'.format(case['id'], case['condition'], ' | '.join(cells)))
+        lines.append('| {} | {} | {} |'.format(
+            case['id'], case['condition'], ' | '.join(cells),
+        ))
+
     (output / 'report.md').write_text('\n'.join(lines) + '\n', encoding='utf-8')
     return rows
 
@@ -205,8 +335,12 @@ def main():
     parser.add_argument('manifest', type=Path)
     parser.add_argument('--output', type=Path, default=DEFAULT_OUTPUT)
     parser.add_argument('--tolerance', type=float, default=DEFAULT_TOLERANCE)
-    parser.add_argument('--epsilon-sweep', action='store_true', help='Also compare approximation ratios ' + ', '.join(map(str, EPSILON_SWEEP)))
+    parser.add_argument(
+        '--epsilon-sweep', action='store_true',
+        help='Also compare approximation ratios ' + ', '.join(map(str, EPSILON_SWEEP)),
+    )
     args = parser.parse_args()
+
     try:
         evaluate(args.manifest, args.output, args.tolerance)
         if args.epsilon_sweep:
@@ -216,13 +350,26 @@ def main():
                 for case in manifest['images']:
                     image = read_image(case['_path'])
                     result = scan(image, Parameters(epsilon=epsilon))
-                    error = corner_error(result.corners, case['corners'], image.shape) if 'corners' in case else None
+                    error = (
+                        corner_error(result.corners, case['corners'], image.shape)
+                        if 'corners' in case else None
+                    )
                     success = result.corners is not None and STAGE_RESULT in result.stages
                     if error is not None:
                         success = error <= args.tolerance and STAGE_RESULT in result.stages
-                    rows.append({'id': case['id'], 'epsilon': epsilon, 'success': success, 'error': error})
-            with (args.output / 'epsilon_experiment.csv').open('w', newline='', encoding='utf-8') as stream:
-                writer = csv.DictWriter(stream, fieldnames=list(rows[0]), lineterminator='\n')
+                    rows.append({
+                        'id': case['id'],
+                        'epsilon': epsilon,
+                        'success': success,
+                        'error': error,
+                    })
+
+            with (args.output / 'epsilon_experiment.csv').open(
+                'w', newline='', encoding='utf-8',
+            ) as stream:
+                writer = csv.DictWriter(
+                    stream, fieldnames=list(rows[0]), lineterminator='\n',
+                )
                 writer.writeheader()
                 writer.writerows(rows)
     except (ValueError, KeyError, OSError, cv2.error) as error:
