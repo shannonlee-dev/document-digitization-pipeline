@@ -5,8 +5,28 @@ from typing import Optional
 import cv2
 import numpy as np
 
-# 기존 import 호환성을 위해 입출력 함수를 다시 내보냅니다.
-from .io import read_image, save_image, save_scan
+from .constants import (
+    DOCUMENT_CORNER_COUNT,
+    MAX_BLUR_SIZE,
+    MAX_PIXEL_VALUE,
+    MIN_IMAGE_SIZE,
+    STAGE_CONTOURS,
+    STAGE_EDGES,
+    STAGE_ORIGINAL,
+    STAGE_PREPROCESSED,
+    STAGE_RESULT,
+    STAGE_WARPED,
+)
+
+MAX_EPSILON = 0.2
+MIN_BLOCK_SIZE = 3
+MIN_WARP_SIZE = 2
+CORNER_CROSS_TOLERANCE = 1e-3
+CONTOUR_COLOR = (0, 0, 255)
+CONTOUR_THICKNESS = 3
+CORNER_LABEL_COLOR = (0, 180, 0)
+CORNER_LABEL_SCALE = 0.7
+CORNER_LABEL_THICKNESS = 2
 
 
 @dataclass(frozen=True)
@@ -20,14 +40,14 @@ class Parameters:
     threshold_c: float = 10
 
     def __post_init__(self):
-        if self.blur < 1 or self.blur > 51 or self.blur % 2 == 0:
-            raise ValueError('blur must be odd and between 1 and 51')
-        if not 0 <= self.low < self.high <= 255:
-            raise ValueError('Canny requires 0 <= low < high <= 255')
-        if not 0 < self.min_area < 1 or not 0 < self.epsilon < 0.2:
-            raise ValueError('min_area must be in (0, 1), epsilon in (0, 0.2)')
-        if self.block_size < 3 or self.block_size % 2 == 0:
-            raise ValueError('block_size must be odd and >= 3')
+        if self.blur < 1 or self.blur > MAX_BLUR_SIZE or self.blur % 2 == 0:
+            raise ValueError(f'blur must be odd and between 1 and {MAX_BLUR_SIZE}')
+        if not 0 <= self.low < self.high <= MAX_PIXEL_VALUE:
+            raise ValueError(f'Canny requires 0 <= low < high <= {MAX_PIXEL_VALUE}')
+        if not 0 < self.min_area < 1 or not 0 < self.epsilon < MAX_EPSILON:
+            raise ValueError(f'min_area must be in (0, 1), epsilon in (0, {MAX_EPSILON})')
+        if self.block_size < MIN_BLOCK_SIZE or self.block_size % 2 == 0:
+            raise ValueError(f'block_size must be odd and >= {MIN_BLOCK_SIZE}')
 
 
 @dataclass
@@ -44,18 +64,18 @@ def order_corners(points):
     좌상·우상·우하·좌하 순서가 됩니다. 동률은 y, x 순으로 결정합니다.
     """
     points = np.asarray(points, dtype=np.float32).reshape(-1, 2)
-    if points.shape != (4, 2) or not np.isfinite(points).all():
+    if points.shape != (DOCUMENT_CORNER_COUNT, 2) or not np.isfinite(points).all():
         raise ValueError('Exactly four finite corners are required')
-    if len(np.unique(points, axis=0)) != 4:
+    if len(np.unique(points, axis=0)) != DOCUMENT_CORNER_COUNT:
         raise ValueError('Corners must be distinct')
     center = points.mean(axis=0)
     angles = np.arctan2(points[:, 1] - center[1], points[:, 0] - center[0])
     ordered = points[np.argsort(angles)]
-    start = min(range(4), key=lambda i: (float(ordered[i].sum()), float(ordered[i, 1]), float(ordered[i, 0])))
+    start = min(range(DOCUMENT_CORNER_COUNT), key=lambda i: (float(ordered[i].sum()), float(ordered[i, 1]), float(ordered[i, 0])))
     ordered = np.roll(ordered, -start, axis=0)
     edges = np.roll(ordered, -1, axis=0) - ordered
     cross = edges[:, 0] * np.roll(edges[:, 1], -1) - edges[:, 1] * np.roll(edges[:, 0], -1)
-    if np.any(cross <= 1e-3):
+    if np.any(cross <= CORNER_CROSS_TOLERANCE):
         raise ValueError('Corners must form a nondegenerate convex quadrilateral')
     return ordered
 
@@ -73,9 +93,9 @@ def detect_document(edges, params):
         if cv2.contourArea(contour) < area_limit:
             break
         polygon = cv2.approxPolyDP(contour, params.epsilon * cv2.arcLength(contour, True), True)
-        if len(polygon) == 4 and cv2.isContourConvex(polygon):
+        if len(polygon) == DOCUMENT_CORNER_COUNT and cv2.isContourConvex(polygon):
             try:
-                return order_corners(polygon.reshape(4, 2))
+                return order_corners(polygon.reshape(DOCUMENT_CORNER_COUNT, 2))
             except ValueError:
                 continue
     return None
@@ -83,8 +103,8 @@ def detect_document(edges, params):
 
 def warp_document(image, corners):
     tl, tr, br, bl = order_corners(corners)
-    width = max(2, int(round(max(np.linalg.norm(tr - tl), np.linalg.norm(br - bl)))))
-    height = max(2, int(round(max(np.linalg.norm(bl - tl), np.linalg.norm(br - tr)))))
+    width = max(MIN_WARP_SIZE, int(round(max(np.linalg.norm(tr - tl), np.linalg.norm(br - bl)))))
+    height = max(MIN_WARP_SIZE, int(round(max(np.linalg.norm(bl - tl), np.linalg.norm(br - tr)))))
     destination = np.float32([[0, 0], [width - 1, 0], [width - 1, height - 1], [0, height - 1]])
     transform = cv2.getPerspectiveTransform(np.float32([tl, tr, br, bl]), destination)
     return cv2.warpPerspective(image, transform, (width, height))
@@ -92,19 +112,19 @@ def warp_document(image, corners):
 
 def scan(image, params=None):
     params = params or Parameters()
-    if image is None or image.dtype != np.uint8 or image.ndim != 3 or image.shape[2] != 3 or min(image.shape[:2]) < 3:
-        raise ValueError('Expected a uint8 BGR image of shape (H, W, 3), at least 3x3')
+    if image is None or image.dtype != np.uint8 or image.ndim != 3 or image.shape[2] != 3 or min(image.shape[:2]) < MIN_IMAGE_SIZE:
+        raise ValueError(f'Expected a uint8 BGR image of shape (H, W, 3), at least {MIN_IMAGE_SIZE}x{MIN_IMAGE_SIZE}')
     prepared = preprocess(image, params)
     edges = cv2.Canny(prepared, params.low, params.high)
     corners = detect_document(edges, params)
     overlay = image.copy()
-    stages = {'01_original': image, '02_preprocessed': prepared, '03_edges': edges, '04_contours': overlay}
+    stages = {STAGE_ORIGINAL: image, STAGE_PREPROCESSED: prepared, STAGE_EDGES: edges, STAGE_CONTOURS: overlay}
     if corners is not None:
-        cv2.polylines(overlay, [corners.astype(np.int32)], True, (0, 0, 255), 3)
+        cv2.polylines(overlay, [corners.astype(np.int32)], True, CONTOUR_COLOR, CONTOUR_THICKNESS)
         for index, point in enumerate(corners.astype(int)):
-            cv2.putText(overlay, str(index), tuple(point), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 180, 0), 2)
+            cv2.putText(overlay, str(index), tuple(point), cv2.FONT_HERSHEY_SIMPLEX, CORNER_LABEL_SCALE, CORNER_LABEL_COLOR, CORNER_LABEL_THICKNESS)
         warped = warp_document(image, corners)
         gray = cv2.cvtColor(warped, cv2.COLOR_BGR2GRAY)
-        stages['05_warped'] = warped
-        stages['06_result'] = cv2.adaptiveThreshold(gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, params.block_size, params.threshold_c)
+        stages[STAGE_WARPED] = warped
+        stages[STAGE_RESULT] = cv2.adaptiveThreshold(gray, MAX_PIXEL_VALUE, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, params.block_size, params.threshold_c)
     return Scan(stages, corners)

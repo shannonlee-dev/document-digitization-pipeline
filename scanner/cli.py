@@ -8,16 +8,36 @@ from pathlib import Path
 import cv2
 import numpy as np
 
+from .constants import MAX_BLUR_SIZE, MAX_PIXEL_VALUE, OUTPUT_STAGES
 from .io import read_image, save_scan
 from .pipeline import Parameters, scan
+
+DEFAULT_OUTPUT = Path('outputs/scan')
+CONTROLS_WINDOW = 'Controls'
+BLUR_TRACKBAR = 'Blur radius'
+CANNY_LOW_TRACKBAR = 'Canny low'
+CANNY_HIGH_TRACKBAR = 'Canny high'
+FRAME_DELAY_MS = 30
+KEY_CODE_MASK = 0xff
+QUIT_KEYS = (ord('q'), 27)
+SAVE_KEY = ord('s')
+MISSING_DOCUMENT_SHAPE = (160, 480, 3)
+MISSING_DOCUMENT_TEXT_POSITION = (20, 80)
+MISSING_DOCUMENT_TEXT_SCALE = 0.8
+MISSING_DOCUMENT_TEXT_COLOR = (255, 255, 255)
+MISSING_DOCUMENT_TEXT_THICKNESS = 2
 
 
 def show(result):
     stages = dict(result.stages)
     if result.corners is None:
-        blank = np.zeros((160, 480, 3), dtype=np.uint8)
-        cv2.putText(blank, 'No document found', (20, 80), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (255, 255, 255), 2)
-        stages.update({'05_warped': blank, '06_result': blank})
+        blank = np.zeros(MISSING_DOCUMENT_SHAPE, dtype=np.uint8)
+        cv2.putText(
+            blank, 'No document found', MISSING_DOCUMENT_TEXT_POSITION,
+            cv2.FONT_HERSHEY_SIMPLEX, MISSING_DOCUMENT_TEXT_SCALE,
+            MISSING_DOCUMENT_TEXT_COLOR, MISSING_DOCUMENT_TEXT_THICKNESS,
+        )
+        stages.update({name: blank for name in OUTPUT_STAGES})
     for name, image in stages.items():
         cv2.namedWindow(name, cv2.WINDOW_NORMAL)
         cv2.imshow(name, image)
@@ -32,17 +52,17 @@ def interactive(params, output, image=None, camera=None):
             capture = cv2.VideoCapture(camera)
             if not capture.isOpened():
                 raise ValueError('Cannot open camera {}'.format(camera))
-        cv2.namedWindow('Controls', cv2.WINDOW_NORMAL)
-        cv2.createTrackbar('Blur radius', 'Controls', params.blur // 2, 25, lambda _: None)
-        cv2.createTrackbar('Canny low', 'Controls', params.low, 254, lambda _: None)
-        cv2.createTrackbar('Canny high', 'Controls', params.high, 255, lambda _: None)
+        cv2.namedWindow(CONTROLS_WINDOW, cv2.WINDOW_NORMAL)
+        cv2.createTrackbar(BLUR_TRACKBAR, CONTROLS_WINDOW, params.blur // 2, MAX_BLUR_SIZE // 2, lambda _: None)
+        cv2.createTrackbar(CANNY_LOW_TRACKBAR, CONTROLS_WINDOW, params.low, MAX_PIXEL_VALUE - 1, lambda _: None)
+        cv2.createTrackbar(CANNY_HIGH_TRACKBAR, CONTROLS_WINDOW, params.high, MAX_PIXEL_VALUE, lambda _: None)
         previous = None
         result = None
         saved = 0
         while True:
-            low = cv2.getTrackbarPos('Canny low', 'Controls')
-            high = max(low + 1, cv2.getTrackbarPos('Canny high', 'Controls'))
-            current = replace(params, blur=2 * cv2.getTrackbarPos('Blur radius', 'Controls') + 1, low=low, high=high)
+            low = cv2.getTrackbarPos(CANNY_LOW_TRACKBAR, CONTROLS_WINDOW)
+            high = max(low + 1, cv2.getTrackbarPos(CANNY_HIGH_TRACKBAR, CONTROLS_WINDOW))
+            current = replace(params, blur=2 * cv2.getTrackbarPos(BLUR_TRACKBAR, CONTROLS_WINDOW) + 1, low=low, high=high)
             if capture is not None:
                 ok, image = capture.read()
                 if not ok:
@@ -51,10 +71,10 @@ def interactive(params, output, image=None, camera=None):
                 result = scan(image, current)
                 show(result)
                 previous = current
-            key = cv2.waitKey(30) & 0xff
-            if key in (ord('q'), 27) or cv2.getWindowProperty('Controls', cv2.WND_PROP_VISIBLE) < 1:
+            key = cv2.waitKey(FRAME_DELAY_MS) & KEY_CODE_MASK
+            if key in QUIT_KEYS or cv2.getWindowProperty(CONTROLS_WINDOW, cv2.WND_PROP_VISIBLE) < 1:
                 break
-            if key == ord('s'):
+            if key == SAVE_KEY:
                 if result.corners is None:
                     print('No document found; adjust parameters before saving.', file=sys.stderr)
                     continue
@@ -74,14 +94,14 @@ def main(argv=None):
     source.add_argument('--image', type=Path)
     source.add_argument('--webcam', type=int, metavar='INDEX')
     parser.add_argument('--headless', action='store_true')
-    parser.add_argument('--output', type=Path, default=Path('outputs/scan'))
-    parser.add_argument('--blur', type=int, default=5)
-    parser.add_argument('--low', type=int, default=50)
-    parser.add_argument('--high', type=int, default=150)
-    parser.add_argument('--min-area', type=float, default=0.08)
-    parser.add_argument('--epsilon', type=float, default=0.02)
-    parser.add_argument('--block-size', type=int, default=31)
-    parser.add_argument('--threshold-c', type=float, default=10)
+    parser.add_argument('--output', type=Path, default=DEFAULT_OUTPUT)
+    parser.add_argument('--blur', type=int, default=Parameters.blur)
+    parser.add_argument('--low', type=int, default=Parameters.low)
+    parser.add_argument('--high', type=int, default=Parameters.high)
+    parser.add_argument('--min-area', type=float, default=Parameters.min_area)
+    parser.add_argument('--epsilon', type=float, default=Parameters.epsilon)
+    parser.add_argument('--block-size', type=int, default=Parameters.block_size)
+    parser.add_argument('--threshold-c', type=float, default=Parameters.threshold_c)
     args = parser.parse_args(argv)
     try:
         params = Parameters(args.blur, args.low, args.high, args.min_area, args.epsilon, args.block_size, args.threshold_c)
