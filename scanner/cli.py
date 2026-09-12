@@ -11,9 +11,10 @@ import numpy as np
 
 from .constants import MAX_BLUR_SIZE, MAX_PIXEL_VALUE, OUTPUT_STAGES
 from .io import read_image, save_scan
-from .pipeline import Image, Parameters, Scan, scan
+from .pipeline import Parameters, Scan, scan
 
 DEFAULT_OUTPUT = Path('outputs/scan')
+DEFAULT_IMAGE = Path('data/personal/simple_1.png')
 CONTROLS_WINDOW = 'Controls'
 BLUR_TRACKBAR = 'Blur radius'
 CANNY_LOW_TRACKBAR = 'Canny low'
@@ -48,7 +49,7 @@ def _show(result: Scan) -> None:
 def _interactive(
     params: Parameters,
     output: Path,
-    image: Optional[Image] = None,
+    image: Optional[np.ndarray] = None,
     camera: Optional[int] = None,
 ) -> None:
     if sys.platform.startswith('linux') and not (
@@ -132,9 +133,10 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     parser = argparse.ArgumentParser(
         description='Rectify a document photo. GUI: s=save, q/Esc=quit.',
     )
-    source = parser.add_mutually_exclusive_group(required=True)
-    source.add_argument('--image', type=Path)
+    source = parser.add_mutually_exclusive_group()
+    source.add_argument('--image', type=Path, default=DEFAULT_IMAGE)
     source.add_argument('--webcam', type=int, metavar='INDEX')
+
     parser.add_argument('--headless', action='store_true')
     parser.add_argument('--output', type=Path, default=DEFAULT_OUTPUT)
     parser.add_argument('--blur', type=int, default=Parameters.blur)

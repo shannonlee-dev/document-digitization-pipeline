@@ -9,17 +9,17 @@ from typing import Any, Dict, List, Mapping, Optional, Sequence, Tuple, Union
 
 import cv2
 import numpy as np
+from numpy.typing import ArrayLike
 
 from scanner.constants import (
     DOCUMENT_CORNER_COUNT,
     GRAYSCALE_LEVELS,
     MAX_PIXEL_VALUE,
     SCAN_STAGES,
-    STAGE_RESULT,
     SUPPORTED_IMAGE_SUFFIXES,
 )
 from scanner.io import read_image, save_image, save_scan
-from scanner.pipeline import Corners, Image, Parameters, Scan, _order_corners, scan
+from scanner.pipeline import Parameters, Scan, _order_corners, scan
 
 GROUPS = ('simple', 'shadow', 'tilted', 'complex')
 IMAGES_PER_GROUP = 5
@@ -57,15 +57,10 @@ PRESETS = {
     'strict': Parameters(blur=9, low=100, high=220),
 }
 
-Manifest = Dict[str, Any]
-EvaluationRow = Dict[str, Any]
-ImageShape = Tuple[int, ...]
-
-
 def _corner_error(
-    predicted: Optional[Corners],
-    expected: Corners,
-    shape: ImageShape,
+    predicted: Optional[ArrayLike],
+    expected: ArrayLike,
+    shape: Tuple[int, ...],
 ) -> Optional[float]:
     if predicted is None:
         return None
@@ -79,7 +74,7 @@ def _corner_error(
     return float(min(distances) / np.hypot(*shape[:2]))
 
 
-def _load_manifest(path: Union[Path, str]) -> Manifest:
+def _load_manifest(path: Union[Path, str]) -> Dict[str, Any]:
     path = Path(path)
     if path.is_dir():
         image_paths = sorted(
@@ -143,7 +138,7 @@ def _load_manifest(path: Union[Path, str]) -> Manifest:
     return manifest
 
 
-def _histogram_plot(histograms: Mapping[str, Sequence[np.ndarray]]) -> Image:
+def _histogram_plot(histograms: Mapping[str, Sequence[np.ndarray]]) -> np.ndarray:
     canvas = np.full(HISTOGRAM_SHAPE, MAX_PIXEL_VALUE, np.uint8)
     for index, (group, values) in enumerate(histograms.items()):
         histogram = np.mean(values, axis=0)
@@ -177,7 +172,7 @@ def _histogram_plot(histograms: Mapping[str, Sequence[np.ndarray]]) -> Image:
     return canvas
 
 
-def _stage_preview(result: Scan) -> Image:
+def _stage_preview(result: Scan) -> np.ndarray:
     tiles = []
     for name in SCAN_STAGES:
         tile = np.full(
@@ -217,7 +212,7 @@ def evaluate(
     manifest_path: Union[Path, str],
     output: Path,
     tolerance: float = DEFAULT_TOLERANCE,
-) -> List[EvaluationRow]:
+) -> List[Dict[str, Any]]:
     if not 0 < tolerance < 1:
         raise ValueError('tolerance must be in (0, 1)')
 
@@ -228,11 +223,12 @@ def evaluate(
 
     for index, case in enumerate(manifest['images']):
         image = read_image(case['_path'])
+        case_output = output / '{:02d}_{}'.format(index + 1, case['id'])
         gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
         hist = np.bincount(gray.ravel(), minlength=GRAYSCALE_LEVELS) / gray.size
         histograms[case['condition']].append(hist)
         save_image(
-            output / '{:02d}'.format(index + 1) / 'histogram.png',
+            case_output / 'histogram.png',
             _histogram_plot({case['id']: [hist]}),
         )
         eda.append({
@@ -251,9 +247,9 @@ def evaluate(
                 _corner_error(result.corners, case['corners'], image.shape)
                 if 'corners' in case else None
             )
-            success = error is not None and error <= tolerance and STAGE_RESULT in result.stages
+            success = error is not None and error <= tolerance and '06_result' in result.stages
             if 'corners' not in case:
-                success = result.corners is not None and STAGE_RESULT in result.stages
+                success = result.corners is not None and '06_result' in result.stages
             rows.append({
                 'id': case['id'],
                 'condition': case['condition'],
@@ -264,9 +260,9 @@ def evaluate(
                 'notes': case['notes'],
             })
 
-            save_scan(result, output / '{:02d}'.format(index + 1) / preset)
+            save_scan(result, case_output / preset)
             save_image(
-                output / '{:02d}'.format(index + 1) / preset / 'preview.jpg',
+                case_output / preset / 'preview.jpg',
                 _stage_preview(result),
             )
 
@@ -367,9 +363,9 @@ def main() -> None:
                         _corner_error(result.corners, case['corners'], image.shape)
                         if 'corners' in case else None
                     )
-                    success = result.corners is not None and STAGE_RESULT in result.stages
+                    success = result.corners is not None and '06_result' in result.stages
                     if error is not None:
-                        success = error <= args.tolerance and STAGE_RESULT in result.stages
+                        success = error <= args.tolerance and '06_result' in result.stages
                     rows.append({
                         'id': case['id'],
                         'epsilon': epsilon,

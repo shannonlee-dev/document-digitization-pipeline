@@ -8,9 +8,7 @@ MIN_IMAGE_SIZE = 3
 DOCUMENT_CORNER_COUNT = 4
 MAX_BLUR_SIZE = 51
 
-STAGE_WARPED = '05_warped'
-STAGE_RESULT = '06_result'
-OUTPUT_STAGES = (STAGE_WARPED, STAGE_RESULT)
+OUTPUT_STAGES = ('05_warped', '06_result')
 SCAN_STAGES = (
     '01_original',
     '02_preprocessed',

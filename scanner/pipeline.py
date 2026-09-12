@@ -4,14 +4,13 @@ from typing import Dict, Optional
 
 import cv2
 import numpy as np
+from numpy.typing import ArrayLike, NDArray
 
 from .constants import (
     DOCUMENT_CORNER_COUNT,
     MAX_BLUR_SIZE,
     MAX_PIXEL_VALUE,
     MIN_IMAGE_SIZE,
-    STAGE_RESULT,
-    STAGE_WARPED,
 )
 
 MAX_EPSILON = 0.2
@@ -20,14 +19,9 @@ MIN_WARP_SIZE = 2
 CORNER_CROSS_TOLERANCE = 1e-3
 CONTOUR_COLOR = (0, 0, 255)
 CONTOUR_THICKNESS = 3
-CORNER_LABEL_COLOR = (0, 180, 0)
-CORNER_LABEL_SCALE = 0.7
+CORNER_LABEL_COLOR = (20, 255, 57)
+CORNER_LABEL_SCALE = 1.7
 CORNER_LABEL_THICKNESS = 2
-
-Image = np.ndarray
-Corners = np.ndarray
-Stages = Dict[str, Image]
-
 
 @dataclass(frozen=True)
 class Parameters:
@@ -52,11 +46,62 @@ class Parameters:
 
 @dataclass
 class Scan:
-    stages: Stages
-    corners: Optional[Corners]
+    stages: Dict[str, np.ndarray]
+    corners: Optional[NDArray[np.float32]]
 
 
-def _order_corners(points: np.ndarray) -> Corners:
+def scan(image: Optional[np.ndarray], params: Optional[Parameters] = None) -> Scan:
+    params = params or Parameters()
+    if (
+        image is None
+        or image.dtype != np.uint8
+        or image.ndim != 3
+        or image.shape[2] != 3
+        or min(image.shape[:2]) < MIN_IMAGE_SIZE
+    ):
+        raise ValueError(
+            f'Expected a uint8 BGR image of shape (H, W, 3), '
+            f'at least {MIN_IMAGE_SIZE}x{MIN_IMAGE_SIZE}'
+        )
+
+    prepared = _preprocess(image, params) # gray + blur
+    edges = cv2.Canny(prepared, params.low, params.high) #canny edge
+
+    overlay = image.copy()
+    stages = {
+        '01_original': image,
+        '02_preprocessed': prepared,
+        '03_edges': edges,
+        '04_contours': overlay,
+    }
+
+    corners = _detect_document(edges, params) # 4개 모서리 좌표
+
+    if corners is not None:
+        cv2.polylines(
+            overlay, [corners.astype(np.int32)], True,
+            CONTOUR_COLOR, CONTOUR_THICKNESS,
+        )
+        for index, point in enumerate(corners.astype(int)):
+            cv2.putText(
+                overlay, str(index), tuple(point),
+                cv2.FONT_HERSHEY_SIMPLEX, CORNER_LABEL_SCALE,
+                CORNER_LABEL_COLOR, CORNER_LABEL_THICKNESS,
+            )
+
+        warped = _warp_document(image, corners)
+        gray = cv2.cvtColor(warped, cv2.COLOR_BGR2GRAY)
+        stages['05_warped'] = warped
+        stages['06_result'] = cv2.adaptiveThreshold(
+            gray, MAX_PIXEL_VALUE,
+            cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY,
+            params.block_size, params.threshold_c,
+        )
+
+    return Scan(stages, corners)
+
+
+def _order_corners(points: ArrayLike) -> NDArray[np.float32]:
     """중심 기준으로 정렬한 뒤 좌상단 점부터 시작하도록 회전합니다.
     """
     points = np.asarray(points, dtype=np.float32).reshape(-1, 2)
@@ -92,13 +137,16 @@ def _order_corners(points: np.ndarray) -> Corners:
     return ordered
 
 
-def _preprocess(image: Image, params: Parameters) -> Image:
+def _preprocess(image: np.ndarray, params: Parameters) -> np.ndarray:
     # OpenCV 색상 배열은 (높이, 너비, 채널) 형태의 BGR 순서입니다.
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     return cv2.GaussianBlur(gray, (params.blur, params.blur), 0)
 
 
-def _detect_document(edges: Image, params: Parameters) -> Optional[Corners]:
+def _detect_document(
+    edges: np.ndarray,
+    params: Parameters,
+) -> Optional[NDArray[np.float32]]:
     contours, _ = cv2.findContours(edges, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
     area_limit = edges.shape[0] * edges.shape[1] * params.min_area
 
@@ -120,7 +168,7 @@ def _detect_document(edges: Image, params: Parameters) -> Optional[Corners]:
     return None
 
 
-def _warp_document(image: Image, corners: Corners) -> Image:
+def _warp_document(image: np.ndarray, corners: ArrayLike) -> np.ndarray:
     tl, tr, br, bl = _order_corners(corners)
     longest_horizontal_edge = max(
         MIN_WARP_SIZE,
@@ -139,52 +187,3 @@ def _warp_document(image: Image, corners: Corners) -> Image:
     ])
     transform = cv2.getPerspectiveTransform(np.float32([tl, tr, br, bl]), destination)
     return cv2.warpPerspective(image, transform, (longest_horizontal_edge, longest_vertical_edge))
-
-
-def scan(image: Optional[Image], params: Optional[Parameters] = None) -> Scan:
-    params = params or Parameters()
-    if (
-        image is None
-        or image.dtype != np.uint8
-        or image.ndim != 3
-        or image.shape[2] != 3
-        or min(image.shape[:2]) < MIN_IMAGE_SIZE
-    ):
-        raise ValueError(
-            f'Expected a uint8 BGR image of shape (H, W, 3), '
-            f'at least {MIN_IMAGE_SIZE}x{MIN_IMAGE_SIZE}'
-        )
-
-    prepared = _preprocess(image, params) # gray + blur
-    edges = cv2.Canny(prepared, params.low, params.high)
-    corners = _detect_document(edges, params)
-    overlay = image.copy()
-    stages = {
-        '01_original': image,
-        '02_preprocessed': prepared,
-        '03_edges': edges,
-        '04_contours': overlay,
-    }
-
-    if corners is not None:
-        cv2.polylines(
-            overlay, [corners.astype(np.int32)], True,
-            CONTOUR_COLOR, CONTOUR_THICKNESS,
-        )
-        for index, point in enumerate(corners.astype(int)):
-            cv2.putText(
-                overlay, str(index), tuple(point),
-                cv2.FONT_HERSHEY_SIMPLEX, CORNER_LABEL_SCALE,
-                CORNER_LABEL_COLOR, CORNER_LABEL_THICKNESS,
-            )
-
-        warped = _warp_document(image, corners)
-        gray = cv2.cvtColor(warped, cv2.COLOR_BGR2GRAY)
-        stages[STAGE_WARPED] = warped
-        stages[STAGE_RESULT] = cv2.adaptiveThreshold(
-            gray, MAX_PIXEL_VALUE,
-            cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY,
-            params.block_size, params.threshold_c,
-        )
-
-    return Scan(stages, corners)
