@@ -60,7 +60,7 @@ class Scan:
     corners: Optional[Corners]
 
 
-def order_corners(points: np.ndarray) -> Corners:
+def _order_corners(points: np.ndarray) -> Corners:
     """중심 기준으로 정렬한 뒤 좌상단 점부터 시작하도록 회전합니다.
     """
     points = np.asarray(points, dtype=np.float32).reshape(-1, 2)
@@ -96,13 +96,13 @@ def order_corners(points: np.ndarray) -> Corners:
     return ordered
 
 
-def preprocess(image: Image, params: Parameters) -> Image:
+def _preprocess(image: Image, params: Parameters) -> Image:
     # OpenCV 색상 배열은 (높이, 너비, 채널) 형태의 BGR 순서입니다.
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     return cv2.GaussianBlur(gray, (params.blur, params.blur), 0)
 
 
-def detect_document(edges: Image, params: Parameters) -> Optional[Corners]:
+def _detect_document(edges: Image, params: Parameters) -> Optional[Corners]:
     contours, _ = cv2.findContours(edges, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
     area_limit = edges.shape[0] * edges.shape[1] * params.min_area
 
@@ -118,31 +118,31 @@ def detect_document(edges: Image, params: Parameters) -> Optional[Corners]:
         )
         if len(polygon) == DOCUMENT_CORNER_COUNT and cv2.isContourConvex(polygon):
             try:
-                return order_corners(polygon.reshape(DOCUMENT_CORNER_COUNT, 2))
+                return _order_corners(polygon.reshape(DOCUMENT_CORNER_COUNT, 2))
             except ValueError:
                 continue
     return None
 
 
-def warp_document(image: Image, corners: Corners) -> Image:
-    tl, tr, br, bl = order_corners(corners)
-    width = max(
+def _warp_document(image: Image, corners: Corners) -> Image:
+    tl, tr, br, bl = _order_corners(corners)
+    longest_horizontal_edge = max(
         MIN_WARP_SIZE,
         int(round(max(np.linalg.norm(tr - tl), np.linalg.norm(br - bl)))),
     )
-    height = max(
+    longest_vertical_edge = max(
         MIN_WARP_SIZE,
         int(round(max(np.linalg.norm(bl - tl), np.linalg.norm(br - tr)))),
     )
 
     destination = np.float32([
         [0, 0],
-        [width - 1, 0],
-        [width - 1, height - 1],
-        [0, height - 1],
+        [longest_horizontal_edge - 1, 0],
+        [longest_horizontal_edge - 1, longest_vertical_edge - 1],
+        [0, longest_vertical_edge - 1],
     ])
     transform = cv2.getPerspectiveTransform(np.float32([tl, tr, br, bl]), destination)
-    return cv2.warpPerspective(image, transform, (width, height))
+    return cv2.warpPerspective(image, transform, (longest_horizontal_edge, longest_vertical_edge))
 
 
 def scan(image: Optional[Image], params: Optional[Parameters] = None) -> Scan:
@@ -159,9 +159,9 @@ def scan(image: Optional[Image], params: Optional[Parameters] = None) -> Scan:
             f'at least {MIN_IMAGE_SIZE}x{MIN_IMAGE_SIZE}'
         )
 
-    prepared = preprocess(image, params)
+    prepared = _preprocess(image, params)
     edges = cv2.Canny(prepared, params.low, params.high)
-    corners = detect_document(edges, params)
+    corners = _detect_document(edges, params)
     overlay = image.copy()
     stages = {
         STAGE_ORIGINAL: image,
@@ -182,7 +182,7 @@ def scan(image: Optional[Image], params: Optional[Parameters] = None) -> Scan:
                 CORNER_LABEL_COLOR, CORNER_LABEL_THICKNESS,
             )
 
-        warped = warp_document(image, corners)
+        warped = _warp_document(image, corners)
         gray = cv2.cvtColor(warped, cv2.COLOR_BGR2GRAY)
         stages[STAGE_WARPED] = warped
         stages[STAGE_RESULT] = cv2.adaptiveThreshold(

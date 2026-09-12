@@ -7,10 +7,10 @@ from unittest.mock import patch
 import cv2
 import numpy as np
 
-from scanner.cli import interactive, main
+from scanner.cli import _interactive, main
 from scanner.io import read_image, save_image, save_scan
-from scanner.pipeline import Parameters, order_corners, scan, warp_document
-from tools.evaluate import corner_error, load_manifest
+from scanner.pipeline import Parameters, _order_corners, scan, _warp_document
+from tools.evaluate import _corner_error, _load_manifest
 
 
 class ScannerTests(unittest.TestCase):
@@ -25,29 +25,29 @@ class ScannerTests(unittest.TestCase):
 
     def test_every_corner_permutation(self) -> None:
         for permutation in itertools.permutations(self.corners):
-            np.testing.assert_allclose(order_corners(permutation), self.corners)
+            np.testing.assert_allclose(_order_corners(permutation), self.corners)
 
     def test_diamond_and_invalid_corners(self) -> None:
         diamond = [[100, 0], [200, 100], [100, 200], [0, 100]]
-        self.assertEqual(len(np.unique(order_corners(diamond), axis=0)), 4)
+        self.assertEqual(len(np.unique(_order_corners(diamond), axis=0)), 4)
         for points in (
             [[0, 0]] * 4,
             [[0, 0], [1, 0], [2, 0], [3, 0]],
             [[0, 0], [10, 0], [1, 1], [0, 10]],
         ):
             with self.assertRaises(ValueError):
-                order_corners(points)
+                _order_corners(points)
 
     def test_scan_geometry_and_binary(self) -> None:
         original = self.image.copy()
         result = scan(self.image)
 
         self.assertIsNotNone(result.corners)
-        self.assertLess(corner_error(result.corners, self.corners, self.image.shape), .01)
+        self.assertLess(_corner_error(result.corners, self.corners, self.image.shape), .01)
         self.assertEqual(len(result.stages), 6)
         self.assertTrue(set(np.unique(result.stages['06_result'])).issubset({0, 255}))
         np.testing.assert_array_equal(self.image, original)
-        self.assertEqual(warp_document(self.image, self.corners).shape[:2], (291, 306))
+        self.assertEqual(_warp_document(self.image, self.corners).shape[:2], (291, 306))
 
     def test_blank_and_invalid_image(self) -> None:
         self.assertIsNone(scan(np.zeros((100, 100, 3), np.uint8)).corners)
@@ -92,7 +92,7 @@ class ScannerTests(unittest.TestCase):
 
     def test_wrong_rectangle_is_not_success(self) -> None:
         self.assertGreater(
-            corner_error(
+            _corner_error(
                 [[0, 0], [499, 0], [499, 399], [0, 399]],
                 self.corners, self.image.shape,
             ),
@@ -104,7 +104,7 @@ class ScannerTests(unittest.TestCase):
             path = Path(directory) / 'manifest.json'
             path.write_text('{"provenance": "personal", "images": []}')
             with self.assertRaises(ValueError):
-                load_manifest(path)
+                _load_manifest(path)
 
     @patch.dict('os.environ', {'DISPLAY': ':test'})
     def test_camera_failure_releases_device(self) -> None:
@@ -114,7 +114,7 @@ class ScannerTests(unittest.TestCase):
         ):
             factory.return_value.isOpened.return_value = False
             with self.assertRaises(ValueError):
-                interactive(Parameters(), Path('unused'), camera=0)
+                _interactive(Parameters(), Path('unused'), camera=0)
             factory.return_value.release.assert_called_once()
 
     @patch.dict('os.environ', {'DISPLAY': ':test'})
@@ -138,9 +138,9 @@ class ScannerTests(unittest.TestCase):
             patch('scanner.cli.cv2.waitKey', side_effect=[ord('s'), ord('q')]),
             patch('scanner.cli.cv2.getWindowProperty', return_value=1),
             patch('scanner.cli.cv2.destroyAllWindows'),
-            patch('scanner.cli.show') as show,
+            patch('scanner.cli._show') as show,
         ):
-            interactive(Parameters(), Path(directory), image=self.image)
+            _interactive(Parameters(), Path(directory), image=self.image)
             self.assertEqual(tracks.call_count, 3)
             self.assertEqual(show.call_count, 2)
             self.assertTrue((Path(directory) / '06_result.png').exists())

@@ -19,7 +19,7 @@ from scanner.constants import (
     SUPPORTED_IMAGE_SUFFIXES,
 )
 from scanner.io import read_image, save_image, save_scan
-from scanner.pipeline import Corners, Image, Parameters, Scan, order_corners, scan
+from scanner.pipeline import Corners, Image, Parameters, Scan, _order_corners, scan
 
 GROUPS = ('simple', 'shadow', 'tilted', 'complex')
 IMAGES_PER_GROUP = 5
@@ -62,7 +62,7 @@ EvaluationRow = Dict[str, Any]
 ImageShape = Tuple[int, ...]
 
 
-def corner_error(
+def _corner_error(
     predicted: Optional[Corners],
     expected: Corners,
     shape: ImageShape,
@@ -70,7 +70,7 @@ def corner_error(
     if predicted is None:
         return None
 
-    predicted, expected = order_corners(predicted), order_corners(expected)
+    predicted, expected = _order_corners(predicted), _order_corners(expected)
     # 순환 매칭으로 마름모의 임의 시작점 차이를 제거합니다.
     distances = [
         np.max(np.linalg.norm(predicted - np.roll(expected, k, axis=0), axis=1))
@@ -79,7 +79,7 @@ def corner_error(
     return float(min(distances) / np.hypot(*shape[:2]))
 
 
-def load_manifest(path: Union[Path, str]) -> Manifest:
+def _load_manifest(path: Union[Path, str]) -> Manifest:
     path = Path(path)
     if path.is_dir():
         image_paths = sorted(
@@ -131,7 +131,7 @@ def load_manifest(path: Union[Path, str]) -> Manifest:
         case['_path'] = image_path
         image = read_image(image_path)
         if 'corners' in case:
-            corners = order_corners(case['corners'])
+            corners = _order_corners(case['corners'])
             if (
                 np.any(corners < 0)
                 or np.any(corners[:, 0] >= image.shape[1])
@@ -143,7 +143,7 @@ def load_manifest(path: Union[Path, str]) -> Manifest:
     return manifest
 
 
-def histogram_plot(histograms: Mapping[str, Sequence[np.ndarray]]) -> Image:
+def _histogram_plot(histograms: Mapping[str, Sequence[np.ndarray]]) -> Image:
     canvas = np.full(HISTOGRAM_SHAPE, MAX_PIXEL_VALUE, np.uint8)
     for index, (group, values) in enumerate(histograms.items()):
         histogram = np.mean(values, axis=0)
@@ -177,7 +177,7 @@ def histogram_plot(histograms: Mapping[str, Sequence[np.ndarray]]) -> Image:
     return canvas
 
 
-def stage_preview(result: Scan) -> Image:
+def _stage_preview(result: Scan) -> Image:
     tiles = []
     for name in SCAN_STAGES:
         tile = np.full(
@@ -221,7 +221,7 @@ def evaluate(
     if not 0 < tolerance < 1:
         raise ValueError('tolerance must be in (0, 1)')
 
-    manifest = load_manifest(manifest_path)
+    manifest = _load_manifest(manifest_path)
     output.mkdir(parents=True, exist_ok=True)
     rows, eda = [], []
     histograms = defaultdict(list)
@@ -233,7 +233,7 @@ def evaluate(
         histograms[case['condition']].append(hist)
         save_image(
             output / '{:02d}'.format(index + 1) / 'histogram.png',
-            histogram_plot({case['id']: [hist]}),
+            _histogram_plot({case['id']: [hist]}),
         )
         eda.append({
             'id': case['id'],
@@ -248,7 +248,7 @@ def evaluate(
         for preset, params in PRESETS.items():
             result = scan(image, params)
             error = (
-                corner_error(result.corners, case['corners'], image.shape)
+                _corner_error(result.corners, case['corners'], image.shape)
                 if 'corners' in case else None
             )
             success = error is not None and error <= tolerance and STAGE_RESULT in result.stages
@@ -267,7 +267,7 @@ def evaluate(
             save_scan(result, output / '{:02d}'.format(index + 1) / preset)
             save_image(
                 output / '{:02d}'.format(index + 1) / preset / 'preview.jpg',
-                stage_preview(result),
+                _stage_preview(result),
             )
 
     with (output / 'results.csv').open('w', newline='', encoding='utf-8') as stream:
@@ -282,7 +282,7 @@ def evaluate(
         json.dumps({k: asdict(v) for k, v in PRESETS.items()}, indent=2),
         encoding='utf-8',
     )
-    save_image(output / 'histograms.png', histogram_plot(histograms))
+    save_image(output / 'histograms.png', _histogram_plot(histograms))
 
     has_ground_truth = all('corners' in case for case in manifest['images'])
     metric = (
@@ -358,13 +358,13 @@ def main() -> None:
         evaluate(args.manifest, args.output, args.tolerance)
         if args.epsilon_sweep:
             rows = []
-            manifest = load_manifest(args.manifest)
+            manifest = _load_manifest(args.manifest)
             for epsilon in EPSILON_SWEEP:
                 for case in manifest['images']:
                     image = read_image(case['_path'])
                     result = scan(image, Parameters(epsilon=epsilon))
                     error = (
-                        corner_error(result.corners, case['corners'], image.shape)
+                        _corner_error(result.corners, case['corners'], image.shape)
                         if 'corners' in case else None
                     )
                     success = result.corners is not None and STAGE_RESULT in result.stages

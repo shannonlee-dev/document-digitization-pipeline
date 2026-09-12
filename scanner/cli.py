@@ -29,7 +29,7 @@ MISSING_DOCUMENT_TEXT_COLOR = (255, 255, 255)
 MISSING_DOCUMENT_TEXT_THICKNESS = 2
 
 
-def show(result: Scan) -> None:
+def _show(result: Scan) -> None:
     stages = dict(result.stages)
     if result.corners is None:
         blank = np.zeros(MISSING_DOCUMENT_SHAPE, dtype=np.uint8)
@@ -45,7 +45,7 @@ def show(result: Scan) -> None:
         cv2.imshow(name, image)
 
 
-def interactive(
+def _interactive(
     params: Parameters,
     output: Path,
     image: Optional[Image] = None,
@@ -98,7 +98,7 @@ def interactive(
 
             if capture is not None or current != previous:
                 result = scan(image, current)
-                show(result)
+                _show(result)
                 previous = current
 
             key = cv2.waitKey(FRAME_DELAY_MS) & KEY_CODE_MASK
@@ -156,7 +156,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         if args.webcam is not None:
             if args.headless:
                 raise ValueError('--webcam requires a desktop display; remove --headless')
-            interactive(params, args.output, camera=args.webcam)
+            _interactive(params, args.output, camera=args.webcam)
         else:
             image = read_image(args.image)
             if args.headless:
@@ -169,7 +169,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
                     )
                 print('Saved: {}'.format(args.output.resolve()))
             else:
-                interactive(params, args.output, image=image)
+                _interactive(params, args.output, image=image)
         return 0
     except (ValueError, OSError, cv2.error) as error:
         print('Error: {}'.format(error), file=sys.stderr)
