@@ -30,7 +30,24 @@ MISSING_DOCUMENT_TEXT_COLOR = (255, 255, 255)
 MISSING_DOCUMENT_TEXT_THICKNESS = 2
 
 
-def _show(result: Scan) -> None:
+def _arrange_windows(names: Sequence[str]) -> None:
+    width, height = 600, 360
+    margin, gap = 12, 12
+    decoration_height = 60
+    columns = 3
+    rows = (len(names) + columns - 1) // columns
+    row_step = height + decoration_height + gap
+
+    for index, name in enumerate(names):
+        row, column = divmod(index, columns)
+        cv2.resizeWindow(name, width, height)
+        cv2.moveWindow(name, margin + column * (width + gap), margin + row * row_step)
+
+    cv2.resizeWindow(CONTROLS_WINDOW, columns * width + (columns - 1) * gap, 140)
+    cv2.moveWindow(CONTROLS_WINDOW, margin, margin + rows * row_step)
+
+
+def _show(result: Scan, arrange: bool = False) -> None:
     stages = dict(result.stages)
     if result.corners is None:
         blank = np.zeros(MISSING_DOCUMENT_SHAPE, dtype=np.uint8)
@@ -44,6 +61,11 @@ def _show(result: Scan) -> None:
     for name, image in stages.items():
         cv2.namedWindow(name, cv2.WINDOW_NORMAL)
         cv2.imshow(name, image)
+    if arrange:
+        # WSLg/Qt는 최초 표시 중 위치를 덮어쓸 수 있어 이벤트 처리 후 재배치합니다.
+        _arrange_windows(list(stages))
+        cv2.waitKey(300)
+        _arrange_windows(list(stages))
 
 
 def _interactive(
@@ -86,7 +108,7 @@ def _interactive(
 
             if current != previous:
                 result = scan(image, current)
-                _show(result)
+                _show(result, arrange=previous is None)
                 previous = current
 
             key = cv2.waitKey(FRAME_DELAY_MS) & KEY_CODE_MASK

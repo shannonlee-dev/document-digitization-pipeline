@@ -7,7 +7,7 @@ from unittest.mock import patch
 import cv2
 import numpy as np
 
-from scanner.cli import _interactive, main
+from scanner.cli import _interactive, _show, main
 from scanner.io import read_image, save_image, save_scan
 from scanner.pipeline import Parameters, _order_corners, scan, _warp_document
 from tools.evaluate import _corner_error, _load_manifest
@@ -132,7 +132,38 @@ class ScannerTests(unittest.TestCase):
             _interactive(Parameters(), Path(directory), image=self.image)
             self.assertEqual(tracks.call_count, 3)
             self.assertEqual(show.call_count, 2)
+            self.assertTrue(show.call_args_list[0].kwargs['arrange'])
+            self.assertFalse(show.call_args_list[1].kwargs['arrange'])
             self.assertTrue((Path(directory) / '06_result.png').exists())
+
+    def test_stage_window_layout(self) -> None:
+        with (
+            patch('scanner.cli.cv2.namedWindow'),
+            patch('scanner.cli.cv2.imshow'),
+            patch('scanner.cli.cv2.waitKey') as wait,
+            patch('scanner.cli.cv2.resizeWindow') as resize,
+            patch('scanner.cli.cv2.moveWindow') as move,
+        ):
+            result = scan(self.image)
+            _show(result, arrange=True)
+            wait.assert_called_once_with(300)
+            sizes = {call.args[0]: call.args[1:] for call in resize.call_args_list}
+            positions = {call.args[0]: call.args[1:] for call in move.call_args_list}
+            self.assertEqual(len(positions), 7)
+            for name in result.stages:
+                self.assertEqual(sizes[name], (600, 360))
+            self.assertEqual(positions['01_original'], (12, 12))
+            self.assertEqual(positions['03_edges'], (1236, 12))
+            self.assertEqual(positions['04_contours'], (12, 444))
+            self.assertEqual(positions['Controls'], (12, 876))
+
+            move.reset_mock()
+            resize.reset_mock()
+            wait.reset_mock()
+            _show(result)
+            wait.assert_not_called()
+            move.assert_not_called()
+            resize.assert_not_called()
 
 
 if __name__ == '__main__':
