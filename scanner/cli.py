@@ -4,13 +4,14 @@ import os
 import sys
 from dataclasses import replace
 from pathlib import Path
+from typing import Optional, Sequence
 
 import cv2
 import numpy as np
 
 from .constants import MAX_BLUR_SIZE, MAX_PIXEL_VALUE, OUTPUT_STAGES
 from .io import read_image, save_scan
-from .pipeline import Parameters, scan
+from .pipeline import Image, Parameters, Scan, scan
 
 DEFAULT_OUTPUT = Path('outputs/scan')
 CONTROLS_WINDOW = 'Controls'
@@ -28,7 +29,7 @@ MISSING_DOCUMENT_TEXT_COLOR = (255, 255, 255)
 MISSING_DOCUMENT_TEXT_THICKNESS = 2
 
 
-def show(result):
+def show(result: Scan) -> None:
     stages = dict(result.stages)
     if result.corners is None:
         blank = np.zeros(MISSING_DOCUMENT_SHAPE, dtype=np.uint8)
@@ -44,7 +45,12 @@ def show(result):
         cv2.imshow(name, image)
 
 
-def interactive(params, output, image=None, camera=None):
+def interactive(
+    params: Parameters,
+    output: Path,
+    image: Optional[Image] = None,
+    camera: Optional[int] = None,
+) -> None:
     if sys.platform.startswith('linux') and not (
         os.environ.get('DISPLAY') or os.environ.get('WAYLAND_DISPLAY')
     ):
@@ -122,7 +128,7 @@ def interactive(params, output, image=None, camera=None):
         cv2.destroyAllWindows()
 
 
-def main(argv=None):
+def main(argv: Optional[Sequence[str]] = None) -> int:
     parser = argparse.ArgumentParser(
         description='Rectify a document photo. GUI: s=save, q/Esc=quit.',
     )

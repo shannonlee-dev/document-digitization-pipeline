@@ -1,6 +1,6 @@
 """순수 이미지 처리 단계입니다. 화면과 파일 처리는 별도 모듈에 둡니다."""
 from dataclasses import dataclass
-from typing import Optional
+from typing import Dict, Optional
 
 import cv2
 import numpy as np
@@ -28,6 +28,10 @@ CORNER_LABEL_COLOR = (0, 180, 0)
 CORNER_LABEL_SCALE = 0.7
 CORNER_LABEL_THICKNESS = 2
 
+Image = np.ndarray
+Corners = np.ndarray
+Stages = Dict[str, Image]
+
 
 @dataclass(frozen=True)
 class Parameters:
@@ -39,7 +43,7 @@ class Parameters:
     block_size: int = 31
     threshold_c: float = 10
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         if self.blur < 1 or self.blur > MAX_BLUR_SIZE or self.blur % 2 == 0:
             raise ValueError(f'blur must be odd and between 1 and {MAX_BLUR_SIZE}')
         if not 0 <= self.low < self.high <= MAX_PIXEL_VALUE:
@@ -52,11 +56,11 @@ class Parameters:
 
 @dataclass
 class Scan:
-    stages: dict
-    corners: Optional[np.ndarray]
+    stages: Stages
+    corners: Optional[Corners]
 
 
-def order_corners(points):
+def order_corners(points: np.ndarray) -> Corners:
     """중심 기준으로 정렬한 뒤 좌상단 점부터 시작하도록 회전합니다.
     """
     points = np.asarray(points, dtype=np.float32).reshape(-1, 2)
@@ -92,22 +96,24 @@ def order_corners(points):
     return ordered
 
 
-def preprocess(image, params):
+def preprocess(image: Image, params: Parameters) -> Image:
     # OpenCV 색상 배열은 (높이, 너비, 채널) 형태의 BGR 순서입니다.
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     return cv2.GaussianBlur(gray, (params.blur, params.blur), 0)
 
 
-def detect_document(edges, params):
+def detect_document(edges: Image, params: Parameters) -> Optional[Corners]:
     contours, _ = cv2.findContours(edges, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
     area_limit = edges.shape[0] * edges.shape[1] * params.min_area
 
     for contour in sorted(contours, key=cv2.contourArea, reverse=True):
         if cv2.contourArea(contour) < area_limit:
             break
+
+        epsilon = params.epsilon * cv2.arcLength(contour, True)
         polygon = cv2.approxPolyDP(
             contour,
-            params.epsilon * cv2.arcLength(contour, True),
+            epsilon,
             True,
         )
         if len(polygon) == DOCUMENT_CORNER_COUNT and cv2.isContourConvex(polygon):
@@ -118,7 +124,7 @@ def detect_document(edges, params):
     return None
 
 
-def warp_document(image, corners):
+def warp_document(image: Image, corners: Corners) -> Image:
     tl, tr, br, bl = order_corners(corners)
     width = max(
         MIN_WARP_SIZE,
@@ -139,7 +145,7 @@ def warp_document(image, corners):
     return cv2.warpPerspective(image, transform, (width, height))
 
 
-def scan(image, params=None):
+def scan(image: Optional[Image], params: Optional[Parameters] = None) -> Scan:
     params = params or Parameters()
     if (
         image is None

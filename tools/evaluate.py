@@ -5,6 +5,7 @@ import json
 from collections import defaultdict
 from dataclasses import asdict
 from pathlib import Path
+from typing import Any, Dict, List, Mapping, Optional, Sequence, Tuple, Union
 
 import cv2
 import numpy as np
@@ -18,7 +19,7 @@ from scanner.constants import (
     SUPPORTED_IMAGE_SUFFIXES,
 )
 from scanner.io import read_image, save_image, save_scan
-from scanner.pipeline import Parameters, order_corners, scan
+from scanner.pipeline import Corners, Image, Parameters, Scan, order_corners, scan
 
 GROUPS = ('simple', 'shadow', 'tilted', 'complex')
 IMAGES_PER_GROUP = 5
@@ -56,8 +57,16 @@ PRESETS = {
     'strict': Parameters(blur=9, low=100, high=220),
 }
 
+Manifest = Dict[str, Any]
+EvaluationRow = Dict[str, Any]
+ImageShape = Tuple[int, ...]
 
-def corner_error(predicted, expected, shape):
+
+def corner_error(
+    predicted: Optional[Corners],
+    expected: Corners,
+    shape: ImageShape,
+) -> Optional[float]:
     if predicted is None:
         return None
 
@@ -70,7 +79,7 @@ def corner_error(predicted, expected, shape):
     return float(min(distances) / np.hypot(*shape[:2]))
 
 
-def load_manifest(path):
+def load_manifest(path: Union[Path, str]) -> Manifest:
     path = Path(path)
     if path.is_dir():
         image_paths = sorted(
@@ -134,7 +143,7 @@ def load_manifest(path):
     return manifest
 
 
-def histogram_plot(histograms):
+def histogram_plot(histograms: Mapping[str, Sequence[np.ndarray]]) -> Image:
     canvas = np.full(HISTOGRAM_SHAPE, MAX_PIXEL_VALUE, np.uint8)
     for index, (group, values) in enumerate(histograms.items()):
         histogram = np.mean(values, axis=0)
@@ -168,7 +177,7 @@ def histogram_plot(histograms):
     return canvas
 
 
-def stage_preview(result):
+def stage_preview(result: Scan) -> Image:
     tiles = []
     for name in SCAN_STAGES:
         tile = np.full(
@@ -204,7 +213,11 @@ def stage_preview(result):
     ))
 
 
-def evaluate(manifest_path, output, tolerance=DEFAULT_TOLERANCE):
+def evaluate(
+    manifest_path: Union[Path, str],
+    output: Path,
+    tolerance: float = DEFAULT_TOLERANCE,
+) -> List[EvaluationRow]:
     if not 0 < tolerance < 1:
         raise ValueError('tolerance must be in (0, 1)')
 
@@ -330,7 +343,7 @@ def evaluate(manifest_path, output, tolerance=DEFAULT_TOLERANCE):
     return rows
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('manifest', type=Path)
     parser.add_argument('--output', type=Path, default=DEFAULT_OUTPUT)
