@@ -1,1 +1,1 @@
-"""Dataset generation and evaluation commands."""
+"""데이터셋 생성과 평가 명령을 제공합니다."""

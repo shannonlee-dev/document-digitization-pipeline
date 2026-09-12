@@ -1,11 +1,11 @@
-"""Pure processing stages; GUI and filesystem concerns live in separate modules."""
+"""순수 이미지 처리 단계입니다. 화면과 파일 처리는 별도 모듈에 둡니다."""
 from dataclasses import dataclass
 from typing import Optional
 
 import cv2
 import numpy as np
 
-# Keep existing imports working; filesystem operations live in io.py.
+# 기존 import 호환성을 위해 입출력 함수를 다시 내보냅니다.
 from .io import read_image, save_image, save_scan
 
 
@@ -37,11 +37,11 @@ class Scan:
 
 
 def order_corners(points):
-    """Sort around centroid, then rotate to the upper-left (minimum x+y).
+    """중심 기준으로 정렬한 뒤 좌상단 점부터 시작하도록 회전합니다.
 
-    Angular sorting avoids duplicate corners caused by independent sum/difference
-    argmin rules for diamonds. In image coordinates y points down, so increasing
-    atan2 produces TL, TR, BR, BL. Ties use y then x deterministically.
+    각도 정렬은 마름모에서 합·차 최솟값을 따로 찾을 때 생기는 중복을
+    피합니다. 이미지 좌표의 y축은 아래를 향하므로 atan2 오름차순은
+    좌상·우상·우하·좌하 순서가 됩니다. 동률은 y, x 순으로 결정합니다.
     """
     points = np.asarray(points, dtype=np.float32).reshape(-1, 2)
     if points.shape != (4, 2) or not np.isfinite(points).all():
@@ -61,7 +61,7 @@ def order_corners(points):
 
 
 def preprocess(image, params):
-    # OpenCV color arrays have shape (height, width, channels), in BGR order.
+    # OpenCV 색상 배열은 (높이, 너비, 채널) 형태의 BGR 순서입니다.
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     return cv2.GaussianBlur(gray, (params.blur, params.blur), 0)
 

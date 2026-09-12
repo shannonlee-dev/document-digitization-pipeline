@@ -1,1 +1,1 @@
-"""Rule-based document digitization using OpenCV and NumPy."""
+"""OpenCV와 NumPy를 사용하는 규칙 기반 문서 스캐너입니다."""

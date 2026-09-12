@@ -1,4 +1,4 @@
-"""Reproducible corner evaluation and histogram EDA; no OCR or learned models."""
+"""OCR이나 학습 모델 없이 꼭짓점 평가와 히스토그램 분석을 재현합니다."""
 import argparse
 import csv
 import json
@@ -24,7 +24,7 @@ def corner_error(predicted, expected, shape):
     if predicted is None:
         return None
     predicted, expected = order_corners(predicted), order_corners(expected)
-    # Cyclic matching removes arbitrary start-vertex choices for diamonds.
+    # 순환 매칭으로 마름모의 임의 시작점 차이를 제거합니다.
     distances = [np.max(np.linalg.norm(predicted - np.roll(expected, k, axis=0), axis=1)) for k in range(4)]
     return float(min(distances) / np.hypot(*shape[:2]))
 
@@ -69,7 +69,7 @@ def histogram_plot(histograms):
     colors = ((50, 130, 20), (180, 80, 0), (0, 90, 220), (150, 0, 140))
     for index, (group, values) in enumerate(histograms.items()):
         histogram = np.mean(values, axis=0)
-        # Log scale shows both background peaks and weak tails.
+        # 로그 스케일로 배경 피크와 약한 꼬리를 함께 보여줍니다.
         y = np.log1p(histogram * 10000) / np.log1p(10000)
         points = np.column_stack((40 + np.arange(256) * 2.6, 340 - y * 260)).astype(np.int32)
         cv2.polylines(canvas, [points], False, colors[index], 2)

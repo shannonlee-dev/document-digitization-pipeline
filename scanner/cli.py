@@ -1,4 +1,4 @@
-"""Image and webcam entry points with optional OpenCV desktop controls."""
+"""이미지·웹캠 진입점과 OpenCV 데스크톱 제어 화면을 제공합니다."""
 import argparse
 import os
 import sys
