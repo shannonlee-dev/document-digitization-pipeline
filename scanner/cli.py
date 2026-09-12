@@ -14,7 +14,7 @@ from .io import read_image, save_scan
 from .pipeline import Parameters, Scan, scan
 
 DEFAULT_OUTPUT = Path('outputs/scan')
-DEFAULT_IMAGE = Path('data/personal/simple_1.png')
+DEFAULT_IMAGE = Path('data/simple_1.png')
 CONTROLS_WINDOW = 'Controls'
 BLUR_TRACKBAR = 'Blur radius'
 CANNY_LOW_TRACKBAR = 'Canny low'

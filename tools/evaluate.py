@@ -26,6 +26,7 @@ IMAGES_PER_GROUP = 5
 REQUIRED_IMAGE_COUNT = len(GROUPS) * IMAGES_PER_GROUP
 SUPPORTED_PROVENANCES = ('synthetic', 'personal', 'lms')
 DEFAULT_OUTPUT = Path('outputs/evaluation')
+DEFAULT_MANIFEST = Path('data')
 DEFAULT_TOLERANCE = 0.03
 EPSILON_SWEEP = (0.01, 0.02, 0.04, 0.06)
 BRIGHTNESS_PERCENTILES = (5, 95)
@@ -66,7 +67,7 @@ def _corner_error(
         return None
 
     predicted, expected = _order_corners(predicted), _order_corners(expected)
-    # 순환 매칭으로 마름모의 임의 시작점 차이를 제거합니다.
+
     distances = [
         np.max(np.linalg.norm(predicted - np.roll(expected, k, axis=0), axis=1))
         for k in range(DOCUMENT_CORNER_COUNT)
@@ -92,7 +93,7 @@ def _load_manifest(path: Union[Path, str]) -> Dict[str, Any]:
                 {
                     'id': image.stem,
                     'path': image.name,
-                    'condition': 'personal',
+                    'condition': image.stem.split('_', 1)[0],
                     'notes': 'User-provided screenshot; ground-truth corners not supplied',
                     '_path': image.resolve(),
                 }
@@ -101,8 +102,6 @@ def _load_manifest(path: Union[Path, str]) -> Dict[str, Any]:
         }
 
     manifest = json.loads(path.read_text(encoding='utf-8'))
-    if manifest.get('provenance') not in SUPPORTED_PROVENANCES:
-        raise ValueError('provenance must be synthetic, personal, or lms')
     cases = manifest.get('images', [])
     if len(cases) != REQUIRED_IMAGE_COUNT or any(
         sum(c.get('condition') == group for c in cases) != IMAGES_PER_GROUP
@@ -339,7 +338,7 @@ def evaluate(
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('manifest', type=Path)
+    parser.add_argument('manifest', nargs='?', type=Path, default=DEFAULT_MANIFEST)
     parser.add_argument('--output', type=Path, default=DEFAULT_OUTPUT)
     parser.add_argument('--tolerance', type=float, default=DEFAULT_TOLERANCE)
     parser.add_argument(

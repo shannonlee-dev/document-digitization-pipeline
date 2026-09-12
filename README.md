@@ -22,7 +22,7 @@ tools/
   evaluate.py           데이터 로딩, 평가, 히스토그램·보고서 생성
 tests/
   test_scanner.py       기하·입출력·CLI·GUI 제어 흐름 검증
-data/personal/         평가 이미지 20장
+data/                  평가 이미지 20장
 outputs/              스캔 결과와 평가 산출물
 ```
 
@@ -36,14 +36,14 @@ Python 3.8 이상이 필요합니다.
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
-python main.py --image data/personal/simple_1.png
+python main.py --image data/simple_1.png
 ```
 
 Windows에서는 `python -m venv .venv`와 `.venv\Scripts\activate`를 사용합니다.
 
 ```bash
 # 화면 없이 처리하고 저장
-python main.py --image data/personal/simple_1.png --headless --output outputs/scan
+python main.py --image data/simple_1.png --headless --output outputs/scan
 
 # 전체 옵션과 기본값
 python main.py --help
@@ -59,7 +59,7 @@ Python에서도 직접 사용할 수 있습니다.
 from scanner.io import read_image, save_scan
 from scanner.pipeline import Parameters, scan
 
-image = read_image('data/personal/simple_1.png')
+image = read_image('data/simple_1.png')
 result = scan(image, Parameters(blur=5, low=50, high=150))
 save_scan(result, 'outputs/scan')
 ```
@@ -69,12 +69,12 @@ save_scan(result, 'outputs/scan')
 ## 평가와 테스트
 
 ```bash
-python -m tools.evaluate data/personal --output outputs/evaluation
-python -m tools.evaluate data/personal --output outputs/evaluation --epsilon-sweep
+python -m tools.evaluate --output outputs/evaluation
+python -m tools.evaluate --output outputs/evaluation --epsilon-sweep
 python -m unittest discover -s tests -v
 ```
 
-디렉터리 입력은 PNG/JPEG 20장을 파일명 순으로 읽습니다. 각 이미지를 `default`(blur=5, Canny=50/150), `sensitive`(3, 10/40), `strict`(9, 100/220)로 처리합니다. `--epsilon-sweep`은 사각형 근사 비율 0.01, 0.02, 0.04, 0.06도 비교합니다.
+평가 입력을 생략하면 기본값 `data/`에서 PNG/JPEG 20장을 파일명 순으로 읽습니다. 파일명의 첫 `_` 앞부분을 촬영 조건으로 사용합니다(예: `shadow_1.png` → `shadow`). JSON manifest나 다른 이미지 폴더도 첫 번째 인자로 지정할 수 있습니다. 각 이미지를 `default`(blur=5, Canny=50/150), `sensitive`(3, 10/40), `strict`(9, 100/220)로 처리합니다. `--epsilon-sweep`은 사각형 근사 비율 0.01, 0.02, 0.04, 0.06도 비교합니다.
 
 평가 폴더에는 `results.csv`, `parameters.json`, `eda.json`, `histograms.png`, `report.md`와 이미지별 단계·미리보기가 생성됩니다. 상세 결과는 생성된 `report.md`를 기준으로 확인합니다.
 
