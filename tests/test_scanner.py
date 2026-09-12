@@ -107,17 +107,6 @@ class ScannerTests(unittest.TestCase):
                 _load_manifest(path)
 
     @patch.dict('os.environ', {'DISPLAY': ':test'})
-    def test_camera_failure_releases_device(self) -> None:
-        with (
-            patch('scanner.cli.cv2.VideoCapture') as factory,
-            patch('scanner.cli.cv2.destroyAllWindows'),
-        ):
-            factory.return_value.isOpened.return_value = False
-            with self.assertRaises(ValueError):
-                _interactive(Parameters(), Path('unused'), camera=0)
-            factory.return_value.release.assert_called_once()
-
-    @patch.dict('os.environ', {'DISPLAY': ':test'})
     def test_trackbar_reprocess_and_save(self) -> None:
         calls = [0]
 

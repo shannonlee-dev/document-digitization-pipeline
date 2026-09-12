@@ -2,7 +2,7 @@
 
 ## 프로젝트 소개
 
-OpenCV와 NumPy로 문서 사진을 검출하고 원근 보정·이진화하는 작은 Python 스캐너입니다. 이미지 파일과 웹캠을 지원하며, 학습 모델이나 OCR은 사용하지 않습니다.
+OpenCV와 NumPy로 문서 사진을 검출하고 원근 보정·이진화하는 작은 Python 스캐너입니다. 이미지 파일을 입력받으며, 학습 모델이나 OCR은 사용하지 않습니다.
 
 ## 핵심 특징
 
@@ -17,7 +17,7 @@ main.py                 실행 진입점
 scanner/
   pipeline.py           Parameters, Scan, 전처리·검출·좌표 정렬·변환
   io.py                 이미지 읽기와 단계별 저장
-  cli.py                인자 처리, 화면·트랙바, 웹캠 제어
+  cli.py                인자 처리, 화면·트랙바 제어
 tools/
   evaluate.py           데이터 로딩, 평가, 히스토그램·보고서 생성
 tests/
@@ -45,14 +45,11 @@ Windows에서는 `python -m venv .venv`와 `.venv\Scripts\activate`를 사용합
 # 화면 없이 처리하고 저장
 python main.py --image data/personal/simple_1.png --headless --output outputs/scan
 
-# 웹캠: 데스크톱 화면과 카메라 필요
-python main.py --webcam 0 --output outputs/camera
-
 # 전체 옵션과 기본값
 python main.py --help
 ```
 
-GUI에서 블러·Canny 트랙바로 설정을 조절하고, `s`로 저장하며 `q` 또는 Esc로 종료합니다. 웹캠은 프레임마다 처리하고 `capture_000`부터 저장합니다. 번호는 실행마다 초기화되므로 세션별 출력 경로를 사용하세요.
+GUI에서 블러·Canny 트랙바로 설정을 조절하고, `s`로 저장하며 `q` 또는 Esc로 종료합니다.
 
 저장 단계는 `01_original`, `02_preprocessed`, `03_edges`, `04_contours`, `05_warped`, `06_result`이며 각각 PNG 파일로 생성됩니다. Headless는 즉시 저장합니다. 같은 경로는 덮어쓰며, 검출 실패 시 진단 단계 1–4만 남기고 이전 결과 5–6을 지웁니다. 성공 종료 코드는 0, 오류는 2입니다.
 
@@ -99,4 +96,4 @@ python -m unittest discover -s tests -v
 
 그림자·반사·낮은 대비는 문서 경계를 끊고, 배경의 액자나 책상은 오검출을 유발할 수 있습니다. 높은 검출률이 올바른 문서 영역이나 글씨 판독성을 보장하지 않습니다. `04_contours.png`, `05_warped.png`, `06_result.png`를 함께 확인하세요. 실제 종이 종횡비, 구겨진 면, 글씨 방향은 복원하지 않습니다.
 
-테스트는 좌표 순열·잘못된 사각형, 이진화, 파일 오류, headless CLI, GUI 제어 흐름과 카메라 자원 해제를 확인합니다. 실제 데스크톱 표시와 물리 카메라 동작은 별도 환경에서 확인해야 합니다.
+테스트는 좌표 순열·잘못된 사각형, 이진화, 파일 오류, headless CLI와 GUI 제어 흐름을 확인합니다. 실제 데스크톱 표시는 별도 환경에서 확인해야 합니다.

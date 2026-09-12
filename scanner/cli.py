@@ -1,4 +1,4 @@
-"""이미지·웹캠 진입점과 OpenCV 데스크톱 제어 화면을 제공합니다."""
+"""이미지 진입점과 OpenCV 데스크톱 제어 화면을 제공합니다."""
 import argparse
 import os
 import sys
@@ -49,21 +49,14 @@ def _show(result: Scan) -> None:
 def _interactive(
     params: Parameters,
     output: Path,
-    image: Optional[np.ndarray] = None,
-    camera: Optional[int] = None,
+    image: np.ndarray,
 ) -> None:
     if sys.platform.startswith('linux') and not (
         os.environ.get('DISPLAY') or os.environ.get('WAYLAND_DISPLAY')
     ):
         raise ValueError('No desktop display. Use --headless for image processing.')
 
-    capture = None
     try:
-        if camera is not None:
-            capture = cv2.VideoCapture(camera)
-            if not capture.isOpened():
-                raise ValueError('Cannot open camera {}'.format(camera))
-
         cv2.namedWindow(CONTROLS_WINDOW, cv2.WINDOW_NORMAL)
         cv2.createTrackbar(
             BLUR_TRACKBAR, CONTROLS_WINDOW,
@@ -80,7 +73,6 @@ def _interactive(
 
         previous = None
         result = None
-        saved = 0
 
         while True:
             low = cv2.getTrackbarPos(CANNY_LOW_TRACKBAR, CONTROLS_WINDOW)
@@ -92,12 +84,7 @@ def _interactive(
                 high=high,
             )
 
-            if capture is not None:
-                ok, image = capture.read()
-                if not ok:
-                    raise ValueError('Camera frame could not be read')
-
-            if capture is not None or current != previous:
+            if current != previous:
                 result = scan(image, current)
                 _show(result)
                 previous = current
@@ -116,16 +103,9 @@ def _interactive(
                     )
                     continue
 
-                destination = (
-                    output if capture is None
-                    else output / ('capture_{:03d}'.format(saved))
-                )
-                save_scan(result, destination)
-                print('Saved: {}'.format(destination.resolve()))
-                saved += 1
+                save_scan(result, output)
+                print('Saved: {}'.format(output.resolve()))
     finally:
-        if capture is not None:
-            capture.release()
         cv2.destroyAllWindows()
 
 
@@ -133,10 +113,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     parser = argparse.ArgumentParser(
         description='Rectify a document photo. GUI: s=save, q/Esc=quit.',
     )
-    source = parser.add_mutually_exclusive_group()
-    source.add_argument('--image', type=Path, default=DEFAULT_IMAGE)
-    source.add_argument('--webcam', type=int, metavar='INDEX')
-
+    parser.add_argument('--image', type=Path, default=DEFAULT_IMAGE)
     parser.add_argument('--headless', action='store_true')
     parser.add_argument('--output', type=Path, default=DEFAULT_OUTPUT)
     parser.add_argument('--blur', type=int, default=Parameters.blur)
@@ -155,23 +132,18 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             args.block_size, args.threshold_c,
         )
 
-        if args.webcam is not None:
-            if args.headless:
-                raise ValueError('--webcam requires a desktop display; remove --headless')
-            _interactive(params, args.output, camera=args.webcam)
+        image = read_image(args.image)
+        if args.headless:
+            result = scan(image, params)
+            save_scan(result, args.output)
+            if result.corners is None:
+                raise ValueError(
+                    'No document quadrilateral found. '
+                    'Diagnostic stages saved; adjust parameters.'
+                )
+            print('Saved: {}'.format(args.output.resolve()))
         else:
-            image = read_image(args.image)
-            if args.headless:
-                result = scan(image, params)
-                save_scan(result, args.output)
-                if result.corners is None:
-                    raise ValueError(
-                        'No document quadrilateral found. '
-                        'Diagnostic stages saved; adjust parameters.'
-                    )
-                print('Saved: {}'.format(args.output.resolve()))
-            else:
-                _interactive(params, args.output, image=image)
+            _interactive(params, args.output, image=image)
         return 0
     except (ValueError, OSError, cv2.error) as error:
         print('Error: {}'.format(error), file=sys.stderr)
