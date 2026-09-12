@@ -8,17 +8,13 @@ MIN_IMAGE_SIZE = 3
 DOCUMENT_CORNER_COUNT = 4
 MAX_BLUR_SIZE = 51
 
-STAGE_ORIGINAL = '01_original'
-STAGE_PREPROCESSED = '02_preprocessed'
-STAGE_EDGES = '03_edges'
-STAGE_CONTOURS = '04_contours'
 STAGE_WARPED = '05_warped'
 STAGE_RESULT = '06_result'
 OUTPUT_STAGES = (STAGE_WARPED, STAGE_RESULT)
 SCAN_STAGES = (
-    STAGE_ORIGINAL,
-    STAGE_PREPROCESSED,
-    STAGE_EDGES,
-    STAGE_CONTOURS,
+    '01_original',
+    '02_preprocessed',
+    '03_edges',
+    '04_contours',
     *OUTPUT_STAGES,
 )

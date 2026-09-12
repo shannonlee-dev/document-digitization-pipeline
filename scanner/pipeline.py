@@ -10,10 +10,6 @@ from .constants import (
     MAX_BLUR_SIZE,
     MAX_PIXEL_VALUE,
     MIN_IMAGE_SIZE,
-    STAGE_CONTOURS,
-    STAGE_EDGES,
-    STAGE_ORIGINAL,
-    STAGE_PREPROCESSED,
     STAGE_RESULT,
     STAGE_WARPED,
 )
@@ -159,15 +155,15 @@ def scan(image: Optional[Image], params: Optional[Parameters] = None) -> Scan:
             f'at least {MIN_IMAGE_SIZE}x{MIN_IMAGE_SIZE}'
         )
 
-    prepared = _preprocess(image, params)
+    prepared = _preprocess(image, params) # gray + blur
     edges = cv2.Canny(prepared, params.low, params.high)
     corners = _detect_document(edges, params)
     overlay = image.copy()
     stages = {
-        STAGE_ORIGINAL: image,
-        STAGE_PREPROCESSED: prepared,
-        STAGE_EDGES: edges,
-        STAGE_CONTOURS: overlay,
+        '01_original': image,
+        '02_preprocessed': prepared,
+        '03_edges': edges,
+        '04_contours': overlay,
     }
 
     if corners is not None:
