@@ -128,6 +128,13 @@ class ScannerTests(unittest.TestCase):
             write_rows()
             summarize(output)
             self.assertIn('| 3 | 1 | 2 | 0 | 33% |', (output / 'report.md').read_text())
+            rows[0]['success'] = '1'
+            rows[1]['success'] = '0'
+            write_rows()
+            original_csv = csv_path.read_bytes()
+            summarize(output)
+            self.assertIn('| 3 | 1 | 2 | 0 | 33% |', (output / 'report.md').read_text())
+            self.assertEqual(csv_path.read_bytes(), original_csv)
             rows[2]['success'] = 'typo'
             write_rows()
             with self.assertRaises(ValueError):

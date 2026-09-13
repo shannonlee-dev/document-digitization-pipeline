@@ -9,7 +9,6 @@ from typing import Any, Dict, List, Union
 
 import cv2
 
-from scanner.constants import SUPPORTED_IMAGE_SUFFIXES
 from scanner.io import read_image, save_image, save_scan
 from scanner.pipeline import scan
 from tools.evaluation_analysis import analyze_image, histogram_plot
@@ -28,30 +27,6 @@ from tools.evaluation_report import summarize
 
 def _load_manifest(path: Union[Path, str]) -> Dict[str, Any]:
     path = Path(path)
-    if path.is_dir():
-        image_paths = sorted(
-            p for p in path.iterdir()
-            if p.suffix.lower() in SUPPORTED_IMAGE_SUFFIXES
-        )
-        if len(image_paths) != REQUIRED_IMAGE_COUNT:
-            raise ValueError(
-                f'Image directory requires exactly '
-                f'{REQUIRED_IMAGE_COUNT} PNG or JPEG images'
-            )
-        return {
-            'provenance': 'unspecified',
-            'images': [
-                {
-                    'id': image.stem,
-                    'path': image.name,
-                    'condition': image.stem.split('_', 1)[0],
-                    'notes': 'Record image source, lighting, angle and background',
-                    '_path': image.resolve(),
-                }
-                for image in image_paths
-            ],
-        }
-
     manifest = json.loads(path.read_text(encoding='utf-8'))
     cases = manifest.get('images', [])
     if len(cases) != REQUIRED_IMAGE_COUNT or any(

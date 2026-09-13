@@ -18,18 +18,17 @@ def summarize(output: Path) -> None:
         raise ValueError('results.csv is empty')
     for row in rows:
         row['success'] = row['success'].strip().lower()
+        row['success'] = {'1': SUCCESS_TRUE, '0': SUCCESS_FALSE}.get(
+            row['success'], row['success'],
+        )
         if row['success'] not in VALID_SUCCESS_VALUES:
-            raise ValueError('success must be true, false, or blank')
+            raise ValueError('success에는 true/false, 1/0 또는 빈 값을 입력하세요')
 
     lines = [
-        '# Evaluation results', '',
-        'Manual review: inspect 04_contours.png, 05_warped.png and 06_result.png.',
-        'PASS requires four correct document corners and a straightened document.',
-        'Fill success with true/false in results.csv; leave unreviewed rows blank.',
-        'Record failure reasons and parameter adjustment results in review_notes.',
-        'Analyze at least three failures. Rates appear only after every row in a group is reviewed.',
+        '# 평가 결과', '',
+        '문서의 네 꼭짓점을 정확히 검출하고 문서를 반듯하게 보정한 경우 성공으로 판정합니다.',
         '',
-        '| Preset | Condition | Total | Success | Failure | Pending | Rate |',
+        '| 설정 | 조건 | 전체 | 성공 | 실패 | 미판정 | 성공률 |',
         '|---|---|---:|---:|---:|---:|---:|',
     ]
     for preset in dict.fromkeys(r['preset'] for r in rows):

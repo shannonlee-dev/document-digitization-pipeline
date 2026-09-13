@@ -1,25 +1,21 @@
-# Evaluation results
+# 평가 결과
 
-Manual review: inspect 04_contours.png, 05_warped.png and 06_result.png.
-PASS requires four correct document corners and a straightened document.
-Fill success with true/false in results.csv; leave unreviewed rows blank.
-Record failure reasons and parameter adjustment results in review_notes.
-Analyze at least three failures. Rates appear only after every row in a group is reviewed.
+문서의 네 꼭짓점을 정확히 검출하고 문서를 반듯하게 보정한 경우 성공으로 판정합니다.
 
-| Preset | Condition | Total | Success | Failure | Pending | Rate |
+| 설정 | 조건 | 전체 | 성공 | 실패 | 미판정 | 성공률 |
 |---|---|---:|---:|---:|---:|---:|
-| default | complex | 5 | 0 | 0 | 5 | pending |
-| default | shadow | 5 | 0 | 0 | 5 | pending |
-| default | simple | 5 | 0 | 0 | 5 | pending |
-| default | tilted | 5 | 0 | 0 | 5 | pending |
-| default | ALL | 20 | 0 | 0 | 20 | pending |
-| sensitive | complex | 5 | 0 | 0 | 5 | pending |
-| sensitive | shadow | 5 | 0 | 0 | 5 | pending |
-| sensitive | simple | 5 | 0 | 0 | 5 | pending |
-| sensitive | tilted | 5 | 0 | 0 | 5 | pending |
-| sensitive | ALL | 20 | 0 | 0 | 20 | pending |
-| strict | complex | 5 | 0 | 0 | 5 | pending |
-| strict | shadow | 5 | 0 | 0 | 5 | pending |
-| strict | simple | 5 | 0 | 0 | 5 | pending |
-| strict | tilted | 5 | 0 | 0 | 5 | pending |
-| strict | ALL | 20 | 0 | 0 | 20 | pending |
+| default | complex | 5 | 3 | 2 | 0 | 60% |
+| default | shadow | 5 | 5 | 0 | 0 | 100% |
+| default | simple | 5 | 5 | 0 | 0 | 100% |
+| default | tilted | 5 | 4 | 1 | 0 | 80% |
+| default | ALL | 20 | 17 | 3 | 0 | 85% |
+| sensitive | complex | 5 | 4 | 1 | 0 | 80% |
+| sensitive | shadow | 5 | 5 | 0 | 0 | 100% |
+| sensitive | simple | 5 | 5 | 0 | 0 | 100% |
+| sensitive | tilted | 5 | 3 | 2 | 0 | 60% |
+| sensitive | ALL | 20 | 17 | 3 | 0 | 85% |
+| strict | complex | 5 | 3 | 2 | 0 | 60% |
+| strict | shadow | 5 | 3 | 2 | 0 | 60% |
+| strict | simple | 5 | 5 | 0 | 0 | 100% |
+| strict | tilted | 5 | 2 | 3 | 0 | 40% |
+| strict | ALL | 20 | 13 | 7 | 0 | 65% |
