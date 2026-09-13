@@ -11,20 +11,19 @@ import cv2
 
 from scanner.constants import SUPPORTED_IMAGE_SUFFIXES
 from scanner.io import read_image, save_image, save_scan
-from scanner.pipeline import Parameters, scan
+from scanner.pipeline import scan
 from tools.evaluation_analysis import analyze_image, histogram_plot
+from tools.evaluation_constants import (
+    DEFAULT_MANIFEST,
+    DEFAULT_OUTPUT,
+    GROUPS,
+    IMAGES_PER_GROUP,
+    PRESETS,
+    REQUIRED_IMAGE_COUNT,
+    RESULTS_FILENAME,
+    SUCCESS_PENDING,
+)
 from tools.evaluation_report import summarize
-
-GROUPS = ('simple', 'shadow', 'tilted', 'complex')
-IMAGES_PER_GROUP = 5
-REQUIRED_IMAGE_COUNT = len(GROUPS) * IMAGES_PER_GROUP
-DEFAULT_OUTPUT = Path('outputs/evaluation')
-DEFAULT_MANIFEST = Path('data')
-PRESETS = {
-    'default': Parameters(),
-    'sensitive': Parameters(blur=3, low=10, high=40),
-    'strict': Parameters(blur=9, low=100, high=220),
-}
 
 
 def _load_manifest(path: Union[Path, str]) -> Dict[str, Any]:
@@ -36,17 +35,17 @@ def _load_manifest(path: Union[Path, str]) -> Dict[str, Any]:
         )
         if len(image_paths) != REQUIRED_IMAGE_COUNT:
             raise ValueError(
-                f'Personal image directory requires exactly '
+                f'Image directory requires exactly '
                 f'{REQUIRED_IMAGE_COUNT} PNG or JPEG images'
             )
         return {
-            'provenance': 'personal',
+            'provenance': 'unspecified',
             'images': [
                 {
                     'id': image.stem,
                     'path': image.name,
                     'condition': image.stem.split('_', 1)[0],
-                    'notes': 'User-provided image; record lighting, angle and background',
+                    'notes': 'Record image source, lighting, angle and background',
                     '_path': image.resolve(),
                 }
                 for image in image_paths
@@ -82,7 +81,7 @@ def evaluate(
     manifest_path: Union[Path, str],
     output: Path,
 ) -> List[Dict[str, Any]]:
-    if (output / 'results.csv').exists():
+    if (output / RESULTS_FILENAME).exists():
         raise ValueError('results.csv already exists; use --summarize or a new output directory')
     manifest = _load_manifest(manifest_path)
     output.mkdir(parents=True, exist_ok=True)
@@ -112,14 +111,14 @@ def evaluate(
                 'condition': case['condition'],
                 'preset': preset,
                 'detected': result.corners is not None,
-                'success': '',
+                'success': SUCCESS_PENDING,
                 'review_notes': '',
                 'notes': case['notes'],
             })
 
             save_scan(result, case_output / preset)
 
-    with (output / 'results.csv').open('w', newline='', encoding='utf-8') as stream:
+    with (output / RESULTS_FILENAME).open('w', newline='', encoding='utf-8') as stream:
         writer = csv.DictWriter(stream, fieldnames=list(rows[0]), lineterminator='\n')
         writer.writeheader()
         writer.writerows(rows)

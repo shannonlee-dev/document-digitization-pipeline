@@ -136,9 +136,15 @@ class ScannerTests(unittest.TestCase):
     def test_manifest_requires_full_dataset(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / 'manifest.json'
-            path.write_text('{"provenance": "personal", "images": []}')
+            path.write_text('{"provenance": "gpt-generated", "images": []}')
             with self.assertRaises(ValueError):
                 _load_manifest(path)
+
+    def test_tools_manifest_resolves_dataset_images(self) -> None:
+        manifest = _load_manifest(Path('tools/manifest.json'))
+
+        self.assertEqual(len(manifest['images']), 20)
+        self.assertTrue(all(case['_path'].is_file() for case in manifest['images']))
 
     @patch.dict('os.environ', {'DISPLAY': ':test'})
     def test_trackbar_reprocess_and_save(self) -> None:

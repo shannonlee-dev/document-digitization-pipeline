@@ -2,16 +2,23 @@
 import csv
 from pathlib import Path
 
+from tools.evaluation_constants import (
+    RESULTS_FILENAME,
+    SUCCESS_FALSE,
+    SUCCESS_TRUE,
+    VALID_SUCCESS_VALUES,
+)
+
 
 def summarize(output: Path) -> None:
     """수동 판정 CSV를 집계하며 미판정은 성공·실패에 포함하지 않습니다."""
-    with (output / 'results.csv').open(newline='', encoding='utf-8') as stream:
+    with (output / RESULTS_FILENAME).open(newline='', encoding='utf-8') as stream:
         rows = list(csv.DictReader(stream))
     if not rows:
         raise ValueError('results.csv is empty')
     for row in rows:
         row['success'] = row['success'].strip().lower()
-        if row['success'] not in ('', 'true', 'false'):
+        if row['success'] not in VALID_SUCCESS_VALUES:
             raise ValueError('success must be true, false, or blank')
 
     lines = [
@@ -29,8 +36,8 @@ def summarize(output: Path) -> None:
         preset_rows = [r for r in rows if r['preset'] == preset]
         for group in sorted({r['condition'] for r in preset_rows}) + ['ALL']:
             subset = [r for r in preset_rows if group == 'ALL' or r['condition'] == group]
-            successes = sum(r['success'] == 'true' for r in subset)
-            failures = sum(r['success'] == 'false' for r in subset)
+            successes = sum(r['success'] == SUCCESS_TRUE for r in subset)
+            failures = sum(r['success'] == SUCCESS_FALSE for r in subset)
             pending = len(subset) - successes - failures
             rate = 'pending' if pending else f'{successes / len(subset):.0%}'
             lines.append(

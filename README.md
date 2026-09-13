@@ -8,7 +8,7 @@
 
 - 문서 경계 검출, 원근 보정, 적응형 이진화
 - 트랙바로 파라미터 조절, 처리 단계별 이미지 저장
-- GUI 없이 실행하거나 샘플 20장으로 설정 비교
+- GUI 없이 실행하거나 GPT로 생성한 합성 이미지 20장으로 설정 비교
 
 ## 아키텍처
 
@@ -52,7 +52,7 @@ python -m tools.evaluate --output outputs/evaluation --summarize
 python -m unittest discover -s tests -v
 ```
 
-`data/`의 20장을 세 가지 설정으로 비교합니다. 문서의 네 꼭짓점을 제대로 잡아 반듯하게 보정했는지 직접 확인하세요. 사각형 검출 여부인 `detected`는 성공 판정이 아닙니다.
+`tools/manifest.json`에 등록된 GPT 생성 이미지 20장을 세 가지 설정으로 비교합니다. 사진별 밝기·배치·배경 메모는 이 파일에서 관리합니다. 문서의 네 꼭짓점을 제대로 잡아 반듯하게 보정했는지 직접 확인하세요. 사각형 검출 여부인 `detected`는 성공 판정이 아닙니다.
 
 집계는 `report.md`를 덮어씁니다. 분석 메모는 별도 파일에 보관하고, 재실험에는 새 출력 폴더를 사용하세요. 추가 옵션은 `python -m tools.evaluate --help`로 확인합니다.
 
