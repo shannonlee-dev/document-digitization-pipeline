@@ -1,6 +1,6 @@
 {
-  "provenance": "gpt-generated",
-  "description": "사용자가 생성한 이미지 20장. condition은 기존 파일명 분류를 유지하고, notes는 이미지에서 관찰한 밝기·배치·배경을 기록함. tilted는 원근 왜곡 조건이며 실제 촬영 각도를 의미하지 않음.",
+  "provenance": "user-provided",
+  "description": "평가 이미지 20장. condition은 파일명 기준 분류, notes는 밝기·배치·배경 메모. tilted는 원근 왜곡 조건.",
   "images": [
     {
       "id": "complex_1",
@@ -120,7 +120,7 @@
       "id": "tilted_5",
       "path": "../data/tilted_5.png",
       "condition": "tilted",
-      "notes": "단순한 어두운 배경 위 밝은 문서. 위쪽 폭이 아래쪽보다 좁고 세로 방향이 압축된 사다리꼴 형태로 원근 왜곡이 뚜렷함."
+      "notes": "단순한 어두운 배경 위 밝은 문서. 약 45° 이상 각도에서 촬영. 위쪽 폭이 아래쪽보다 좁고 세로 방향이 압축된 사다리꼴 형태로 원근 왜곡이 뚜렷함."
     }
   ]
 }

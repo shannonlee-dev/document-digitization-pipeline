@@ -143,7 +143,7 @@ class ScannerTests(unittest.TestCase):
     def test_manifest_requires_full_dataset(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / 'manifest.json'
-            path.write_text('{"provenance": "gpt-generated", "images": []}')
+            path.write_text('{"images": []}')
             with self.assertRaises(ValueError):
                 _load_manifest(path)
 
