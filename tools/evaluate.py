@@ -1,33 +1,29 @@
-"""OCR이나 학습 모델 없이 꼭짓점 평가와 히스토그램 분석을 재현합니다."""
+"""수동 평가용 처리 결과와 히스토그램을 만들고 판정 결과를 집계합니다."""
 import argparse
 import csv
 import json
 from collections import defaultdict
 from dataclasses import asdict
 from pathlib import Path
-from typing import Any, Dict, List, Mapping, Optional, Sequence, Tuple, Union
+from typing import Any, Dict, List, Mapping, Sequence, Union
 
 import cv2
 import numpy as np
-from numpy.typing import ArrayLike
 
 from scanner.constants import (
-    DOCUMENT_CORNER_COUNT,
     GRAYSCALE_LEVELS,
     MAX_PIXEL_VALUE,
     SCAN_STAGES,
     SUPPORTED_IMAGE_SUFFIXES,
 )
 from scanner.io import read_image, save_image, save_scan
-from scanner.pipeline import Parameters, Scan, _order_corners, scan
+from scanner.pipeline import Parameters, Scan, scan
 
 GROUPS = ('simple', 'shadow', 'tilted', 'complex')
 IMAGES_PER_GROUP = 5
 REQUIRED_IMAGE_COUNT = len(GROUPS) * IMAGES_PER_GROUP
-SUPPORTED_PROVENANCES = ('synthetic', 'personal', 'lms')
 DEFAULT_OUTPUT = Path('outputs/evaluation')
 DEFAULT_MANIFEST = Path('data')
-DEFAULT_TOLERANCE = 0.03
 EPSILON_SWEEP = (0.01, 0.02, 0.04, 0.06)
 BRIGHTNESS_PERCENTILES = (5, 95)
 
@@ -58,23 +54,6 @@ PRESETS = {
     'strict': Parameters(blur=9, low=100, high=220),
 }
 
-def _corner_error(
-    predicted: Optional[ArrayLike],
-    expected: ArrayLike,
-    shape: Tuple[int, ...],
-) -> Optional[float]:
-    if predicted is None:
-        return None
-
-    predicted, expected = _order_corners(predicted), _order_corners(expected)
-
-    distances = [
-        np.max(np.linalg.norm(predicted - np.roll(expected, k, axis=0), axis=1))
-        for k in range(DOCUMENT_CORNER_COUNT)
-    ]
-    return float(min(distances) / np.hypot(*shape[:2]))
-
-
 def _load_manifest(path: Union[Path, str]) -> Dict[str, Any]:
     path = Path(path)
     if path.is_dir():
@@ -94,7 +73,7 @@ def _load_manifest(path: Union[Path, str]) -> Dict[str, Any]:
                     'id': image.stem,
                     'path': image.name,
                     'condition': image.stem.split('_', 1)[0],
-                    'notes': 'User-provided screenshot; ground-truth corners not supplied',
+                    'notes': 'User-provided image; record lighting, angle and background',
                     '_path': image.resolve(),
                 }
                 for image in image_paths
@@ -123,17 +102,6 @@ def _load_manifest(path: Union[Path, str]) -> Dict[str, Any]:
 
         image_path = (path.parent / case['path']).resolve()
         case['_path'] = image_path
-        image = read_image(image_path)
-        if 'corners' in case:
-            corners = _order_corners(case['corners'])
-            if (
-                np.any(corners < 0)
-                or np.any(corners[:, 0] >= image.shape[1])
-                or np.any(corners[:, 1] >= image.shape[0])
-            ):
-                raise ValueError(
-                    f"Ground-truth corners lie outside image: {case['id']}"
-                )
     return manifest
 
 
@@ -210,11 +178,9 @@ def _stage_preview(result: Scan) -> np.ndarray:
 def evaluate(
     manifest_path: Union[Path, str],
     output: Path,
-    tolerance: float = DEFAULT_TOLERANCE,
 ) -> List[Dict[str, Any]]:
-    if not 0 < tolerance < 1:
-        raise ValueError('tolerance must be in (0, 1)')
-
+    if (output / 'results.csv').exists():
+        raise ValueError('results.csv already exists; use --summarize or a new output directory')
     manifest = _load_manifest(manifest_path)
     output.mkdir(parents=True, exist_ok=True)
     rows, eda = [], []
@@ -242,20 +208,13 @@ def evaluate(
 
         for preset, params in PRESETS.items():
             result = scan(image, params)
-            error = (
-                _corner_error(result.corners, case['corners'], image.shape)
-                if 'corners' in case else None
-            )
-            success = error is not None and error <= tolerance and '06_result' in result.stages
-            if 'corners' not in case:
-                success = result.corners is not None and '06_result' in result.stages
             rows.append({
                 'id': case['id'],
                 'condition': case['condition'],
                 'preset': preset,
                 'detected': result.corners is not None,
-                'success': success,
-                'max_corner_error': error,
+                'success': '',
+                'review_notes': '',
                 'notes': case['notes'],
             })
 
@@ -279,68 +238,53 @@ def evaluate(
     )
     save_image(output / 'histograms.png', _histogram_plot(histograms))
 
-    has_ground_truth = all('corners' in case for case in manifest['images'])
-    metric = (
-        'Automatic geometric proxy: maximum matched corner distance / '
-        f'image diagonal <= {tolerance:.3f}, and warp produced.'
-        if has_ground_truth else
-        'Personal-image proxy: document quadrilateral detected and warp produced.'
-    )
+    summarize(output)
+    return rows
+
+
+def summarize(output: Path) -> None:
+    """수동 판정 CSV를 집계하며 미판정은 성공·실패에 포함하지 않습니다."""
+    with (output / 'results.csv').open(newline='', encoding='utf-8') as stream:
+        rows = list(csv.DictReader(stream))
+    if not rows:
+        raise ValueError('results.csv is empty')
+    for row in rows:
+        row['success'] = row['success'].strip().lower()
+        if row['success'] not in ('', 'true', 'false'):
+            raise ValueError('success must be true, false, or blank')
+
     lines = [
-        '# Evaluation results',
+        '# Evaluation results', '',
+        'Manual review: inspect 04_contours.png, 05_warped.png and 06_result.png.',
+        'PASS requires four correct document corners and a straightened document.',
+        'Fill success with true/false in results.csv; leave unreviewed rows blank.',
+        'Record failure reasons and parameter adjustment results in review_notes.',
+        'Analyze at least three failures. Rates appear only after every row in a group is reviewed.',
         '',
-        f"Provenance: **{manifest['provenance']}**",
-        '',
-        metric,
-        'This does not certify text quality or physical aspect ratio. '
-        'Inspect saved warps before final submission.',
-        '',
-        '| Preset | Condition | Total | Success | Failure | Rate |',
-        '|---|---|---:|---:|---:|---:|',
+        '| Preset | Condition | Total | Success | Failure | Pending | Rate |',
+        '|---|---|---:|---:|---:|---:|---:|',
     ]
-    groups = sorted({case['condition'] for case in manifest['images']})
-    for preset in PRESETS:
-        for group in groups:
-            subset = [r for r in rows if r['preset'] == preset and r['condition'] == group]
-            successes = sum(r['success'] for r in subset)
+    for preset in dict.fromkeys(r['preset'] for r in rows):
+        preset_rows = [r for r in rows if r['preset'] == preset]
+        for group in sorted({r['condition'] for r in preset_rows}) + ['ALL']:
+            subset = [r for r in preset_rows if group == 'ALL' or r['condition'] == group]
+            successes = sum(r['success'] == 'true' for r in subset)
+            failures = sum(r['success'] == 'false' for r in subset)
+            pending = len(subset) - successes - failures
+            rate = 'pending' if pending else f'{successes / len(subset):.0%}'
             lines.append(
                 f'| {preset} | {group} | {len(subset)} | {successes} | '
-                f'{len(subset) - successes} | {successes / len(subset):.0%} |'
+                f'{failures} | {pending} | {rate} |'
             )
-
-    lines.extend([
-        '',
-        '## Per-image parameter comparison',
-        '',
-        '| Image | Condition | default | sensitive | strict |',
-        '|---|---|---|---|---|',
-    ])
-    for case in manifest['images']:
-        values = [
-            next(r for r in rows if r['id'] == case['id'] and r['preset'] == p)
-            for p in PRESETS
-        ]
-        cells = []
-        for result in values:
-            detail = (
-                ('detected' if result['detected'] else 'not detected')
-                if not has_ground_truth else (
-                    'not detected' if result['max_corner_error'] is None
-                    else f"{result['max_corner_error']:.4f}"
-                )
-            )
-            cells.append(f"{'PASS' if result['success'] else 'FAIL'} ({detail})")
-        lines.append(f"| {case['id']} | {case['condition']} | {' | '.join(cells)} |")
-
     (output / 'report.md').write_text('\n'.join(lines) + '\n', encoding='utf-8')
-    return rows
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('manifest', nargs='?', type=Path, default=DEFAULT_MANIFEST)
     parser.add_argument('--output', type=Path, default=DEFAULT_OUTPUT)
-    parser.add_argument('--tolerance', type=float, default=DEFAULT_TOLERANCE)
+    parser.add_argument('--summarize', action='store_true',
+                        help='Summarize manually reviewed results.csv without processing images')
     parser.add_argument(
         '--epsilon-sweep', action='store_true',
         help='Also compare approximation ratios ' + ', '.join(map(str, EPSILON_SWEEP)),
@@ -348,7 +292,10 @@ def main() -> None:
     args = parser.parse_args()
 
     try:
-        evaluate(args.manifest, args.output, args.tolerance)
+        if args.summarize:
+            summarize(args.output)
+            return
+        evaluate(args.manifest, args.output)
         if args.epsilon_sweep:
             rows = []
             manifest = _load_manifest(args.manifest)
@@ -356,18 +303,13 @@ def main() -> None:
                 for case in manifest['images']:
                     image = read_image(case['_path'])
                     result = scan(image, Parameters(epsilon=epsilon))
-                    error = (
-                        _corner_error(result.corners, case['corners'], image.shape)
-                        if 'corners' in case else None
-                    )
-                    success = result.corners is not None and '06_result' in result.stages
-                    if error is not None:
-                        success = error <= args.tolerance and '06_result' in result.stages
+                    save_scan(result, args.output / case['id'] / f'epsilon_{epsilon}')
                     rows.append({
                         'id': case['id'],
                         'epsilon': epsilon,
-                        'success': success,
-                        'error': error,
+                        'detected': result.corners is not None,
+                        'success': '',
+                        'review_notes': '',
                     })
 
             with (args.output / 'epsilon_experiment.csv').open(

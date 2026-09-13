@@ -78,17 +78,20 @@ python -m unittest discover -s tests -v
 
 평가 폴더에는 `results.csv`, `parameters.json`, `eda.json`, `histograms.png`, `report.md`와 이미지별 단계·미리보기가 생성됩니다. 상세 결과는 생성된 `report.md`를 기준으로 확인합니다.
 
-현재 포함된 개인 이미지 20장에는 정답 꼭짓점이 없으므로 **사각형 검출과 변환 결과 생성 여부**만 평가합니다. 포함된 데이터의 실행 결과는 다음과 같습니다.
+성공 여부는 사람이 판정합니다. 각 결과의 `04_contours.png`, `05_warped.png`, `06_result.png`를 확인하고, **문서의 네 꼭짓점이 올바르게 검출되어 반듯하게 변환됐으면 성공**으로 기록합니다.
 
-| 설정 | 성공 | 실패 | 성공률 |
-|---|---:|---:|---:|
-| default | 18 | 2 | 90% |
-| sensitive | 18 | 2 | 90% |
-| strict | 14 | 6 | 70% |
+`results.csv`의 `success`에 `true`(성공) 또는 `false`(실패)를 입력하고, `review_notes`에 실패 원인과 파라미터 조정 결과를 적습니다. `detected`는 사각형 검출 여부이며 성공 판정과 별개입니다. 미판정은 빈칸으로 유지합니다.
 
-정답 좌표로 평가하려면 디렉터리 대신 JSON manifest를 전달합니다. `provenance`는 `personal`, `synthetic`, `lms` 중 하나이며, `images`에는 `simple`, `shadow`, `tilted`, `complex` 조건별 5장씩 총 20장이 필요합니다. 각 항목은 고유한 `id`, manifest 기준 상대 `path`, `condition`, 촬영 조건 `notes`를 갖습니다. 선택 항목 `corners`는 이미지 안의 네 `[x, y]` 좌표입니다.
+```bash
+# CSV 판정 후 이미지 재처리 없이 보고서 집계
+python -m tools.evaluate --output outputs/evaluation --summarize
+```
 
-정답이 있는 이미지는 최대 대응 꼭짓점 거리 / 이미지 대각선이 `--tolerance`(기본 0.03) 이하이고 변환 결과가 생성되어야 성공입니다. 정답이 없는 이미지는 검출·변환 여부만 판정합니다.
+보고서는 설정별 전체·조건별 성공, 실패, 미판정 수를 표시합니다. 해당 그룹의 판정이 모두 끝나면 성공률(성공 수 / 전체 수)을 표시합니다. 최소 3건의 실패 원인과 조정 전후 비교는 별도로 분석해 보고서에 추가하세요. 집계 명령은 `report.md`를 다시 쓰므로 상세 분석은 별도 파일에 보관하세요. 기존 판정을 보호하기 위해 `results.csv`가 있는 폴더에는 평가를 다시 실행할 수 없습니다. 재실험은 새 출력 폴더를 사용하세요.
+
+`--epsilon-sweep` 결과는 `epsilon_experiment.csv`에 수동 판정하며, 단계 이미지는 `<이미지 ID>/epsilon_<값>/`에 저장됩니다. 이 CSV의 판정은 별도로 집계합니다.
+
+JSON manifest는 `provenance`와 `images`를 가지며, `images`에는 `simple`, `shadow`, `tilted`, `complex` 조건별 5장씩 총 20장이 필요합니다. 각 항목은 고유한 `id`, manifest 기준 상대 `path`, `condition`, 촬영 조건 `notes`를 갖습니다. 정답 좌표는 사용하지 않습니다. 폴더 입력 시에도 CSV의 `notes`에 실제 촬영 조건을 기록하세요.
 
 ## 검출 원리와 한계
 

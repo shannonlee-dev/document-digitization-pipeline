@@ -1,3 +1,4 @@
+import csv
 import itertools
 import tempfile
 import unittest
@@ -10,7 +11,7 @@ import numpy as np
 from scanner.cli import _interactive, _show, main
 from scanner.io import read_image, save_image, save_scan
 from scanner.pipeline import Parameters, _order_corners, scan, _warp_document
-from tools.evaluate import _corner_error, _load_manifest
+from tools.evaluate import _load_manifest, evaluate, summarize
 
 
 class ScannerTests(unittest.TestCase):
@@ -43,7 +44,7 @@ class ScannerTests(unittest.TestCase):
         result = scan(self.image)
 
         self.assertIsNotNone(result.corners)
-        self.assertLess(_corner_error(result.corners, self.corners, self.image.shape), .01)
+        np.testing.assert_allclose(result.corners, self.corners, atol=5)
         self.assertEqual(len(result.stages), 6)
         self.assertTrue(set(np.unique(result.stages['06_result'])).issubset({0, 255}))
         np.testing.assert_array_equal(self.image, original)
@@ -90,14 +91,47 @@ class ScannerTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 save_image(root / 'bad.gif', self.image)
 
-    def test_wrong_rectangle_is_not_success(self) -> None:
-        self.assertGreater(
-            _corner_error(
-                [[0, 0], [499, 0], [499, 399], [0, 399]],
-                self.corners, self.image.shape,
-            ),
-            .03,
-        )
+    def test_manual_evaluation(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            image_path = root / 'input.png'
+            save_image(image_path, self.image)
+            manifest = {'images': [{
+                'id': 'simple_1', 'condition': 'simple', 'notes': 'test',
+                '_path': image_path,
+            }]}
+            output = root / 'evaluation'
+            with patch('tools.evaluate._load_manifest', return_value=manifest):
+                rows = evaluate(image_path, output)
+                self.assertTrue(all(r['detected'] for r in rows))
+                self.assertTrue(all(r['success'] == '' for r in rows))
+                self.assertNotIn('max_corner_error', rows[0])
+                with self.assertRaises(ValueError):
+                    evaluate(image_path, output)
+            self.assertIn('pending', (output / 'report.md').read_text())
+            rows[0]['success'] = 'true'
+            rows[1]['success'] = 'false'
+            for row in rows:
+                row['preset'] = 'default'
+            csv_path = output / 'results.csv'
+
+            def write_rows():
+                with csv_path.open('w', newline='') as stream:
+                    writer = csv.DictWriter(stream, fieldnames=list(rows[0]))
+                    writer.writeheader()
+                    writer.writerows(rows)
+
+            write_rows()
+            summarize(output)
+            self.assertIn('| 3 | 1 | 1 | 1 | pending |', (output / 'report.md').read_text())
+            rows[2]['success'] = 'false'
+            write_rows()
+            summarize(output)
+            self.assertIn('| 3 | 1 | 2 | 0 | 33% |', (output / 'report.md').read_text())
+            rows[2]['success'] = 'typo'
+            write_rows()
+            with self.assertRaises(ValueError):
+                summarize(output)
 
     def test_manifest_requires_full_dataset(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

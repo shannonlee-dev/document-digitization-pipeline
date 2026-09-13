@@ -1,37 +1,25 @@
 # Evaluation results
 
-Provenance: **personal**
+Manual review: inspect 04_contours.png, 05_warped.png and 06_result.png.
+PASS requires four correct document corners and a straightened document.
+Fill success with true/false in results.csv; leave unreviewed rows blank.
+Record failure reasons and parameter adjustment results in review_notes.
+Analyze at least three failures. Rates appear only after every row in a group is reviewed.
 
-Personal-image proxy: document quadrilateral detected and warp produced.
-This does not certify text quality or physical aspect ratio. Inspect saved warps before final submission.
-
-| Preset | Condition | Total | Success | Failure | Rate |
-|---|---|---:|---:|---:|---:|
-| default | personal | 20 | 18 | 2 | 90% |
-| sensitive | personal | 20 | 18 | 2 | 90% |
-| strict | personal | 20 | 14 | 6 | 70% |
-
-## Per-image parameter comparison
-
-| Image | Condition | default | sensitive | strict |
-|---|---|---|---|---|
-| complex_1 | personal | PASS (detected) | PASS (detected) | PASS (detected) |
-| complex_2 | personal | FAIL (not detected) | PASS (detected) | PASS (detected) |
-| complex_3 | personal | PASS (detected) | PASS (detected) | PASS (detected) |
-| complex_4 | personal | PASS (detected) | PASS (detected) | PASS (detected) |
-| complex_5 | personal | PASS (detected) | PASS (detected) | FAIL (not detected) |
-| shadow_1 | personal | PASS (detected) | PASS (detected) | PASS (detected) |
-| shadow_2 | personal | PASS (detected) | PASS (detected) | FAIL (not detected) |
-| shadow_3 | personal | PASS (detected) | PASS (detected) | PASS (detected) |
-| shadow_4 | personal | PASS (detected) | PASS (detected) | PASS (detected) |
-| shadow_5 | personal | PASS (detected) | PASS (detected) | FAIL (not detected) |
-| simple_1 | personal | PASS (detected) | PASS (detected) | PASS (detected) |
-| simple_2 | personal | PASS (detected) | PASS (detected) | PASS (detected) |
-| simple_3 | personal | PASS (detected) | PASS (detected) | PASS (detected) |
-| simple_4 | personal | PASS (detected) | PASS (detected) | PASS (detected) |
-| simple_5 | personal | PASS (detected) | PASS (detected) | PASS (detected) |
-| tilted_1 | personal | PASS (detected) | PASS (detected) | PASS (detected) |
-| tilted_2 | personal | PASS (detected) | PASS (detected) | PASS (detected) |
-| tilted_3 | personal | FAIL (not detected) | FAIL (not detected) | FAIL (not detected) |
-| tilted_4 | personal | PASS (detected) | PASS (detected) | FAIL (not detected) |
-| tilted_5 | personal | PASS (detected) | FAIL (not detected) | FAIL (not detected) |
+| Preset | Condition | Total | Success | Failure | Pending | Rate |
+|---|---|---:|---:|---:|---:|---:|
+| default | complex | 5 | 0 | 0 | 5 | pending |
+| default | shadow | 5 | 0 | 0 | 5 | pending |
+| default | simple | 5 | 0 | 0 | 5 | pending |
+| default | tilted | 5 | 0 | 0 | 5 | pending |
+| default | ALL | 20 | 0 | 0 | 20 | pending |
+| sensitive | complex | 5 | 0 | 0 | 5 | pending |
+| sensitive | shadow | 5 | 0 | 0 | 5 | pending |
+| sensitive | simple | 5 | 0 | 0 | 5 | pending |
+| sensitive | tilted | 5 | 0 | 0 | 5 | pending |
+| sensitive | ALL | 20 | 0 | 0 | 20 | pending |
+| strict | complex | 5 | 0 | 0 | 5 | pending |
+| strict | shadow | 5 | 0 | 0 | 5 | pending |
+| strict | simple | 5 | 0 | 0 | 5 | pending |
+| strict | tilted | 5 | 0 | 0 | 5 | pending |
+| strict | ALL | 20 | 0 | 0 | 20 | pending |
