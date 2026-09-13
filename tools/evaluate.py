@@ -88,6 +88,9 @@ def evaluate(
                 'detected': result.corners is not None,
                 'success': SUCCESS_PENDING,
                 'review_notes': '',
+                'lighting': case.get('lighting', ''),
+                'angle': case.get('angle', ''),
+                'background_complexity': case.get('background_complexity', ''),
                 'notes': case['notes'],
             })
 

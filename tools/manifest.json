@@ -1,125 +1,185 @@
 {
   "provenance": "user-provided",
-  "description": "평가 이미지 20장. condition은 파일명 기준 분류, notes는 밝기·배치·배경 메모. tilted는 원근 왜곡 조건.",
+  "description": "평가 이미지 20장. condition은 파일명 기준 분류. lighting은 조명의 균일성(uniform/uneven), angle은 촬영 각도 분류(front/45deg+), background_complexity는 배경 복잡도(low/high). angle은 촬영 조건 분류이며 실측 각도가 아님. notes는 회전·반사·구김·가림 등의 상세 메모.",
   "images": [
     {
       "id": "complex_1",
       "path": "../data/complex_1.png",
       "condition": "complex",
+      "lighting": "uniform",
+      "angle": "front",
+      "background_complexity": "high",
       "notes": "밝은 문서가 나뭇결 무늬 배경 위에 놓여 있음. 정면에 가까운 배치이며 문서 전반의 밝기가 비교적 균일함."
     },
     {
       "id": "complex_2",
       "path": "../data/complex_2.png",
       "condition": "complex",
+      "lighting": "uniform",
+      "angle": "front",
+      "background_complexity": "high",
       "notes": "세로로 긴 영수증이 파랑·흰색 체크무늬 배경 위에 놓여 있음. 정면에 가까우며 배경의 반복 무늬가 뚜렷함."
     },
     {
       "id": "complex_3",
       "path": "../data/complex_3.png",
       "condition": "complex",
+      "lighting": "uniform",
+      "angle": "front",
+      "background_complexity": "high",
       "notes": "밝은 문서 바깥에 큰 검정 직사각형 받침과 나무 배경이 함께 보임. 정면에 가까우며 문서와 받침의 사각형 경계가 중첩됨."
     },
     {
       "id": "complex_4",
       "path": "../data/complex_4.png",
       "condition": "complex",
+      "lighting": "uniform",
+      "angle": "front",
+      "background_complexity": "high",
       "notes": "나무 책상 위 문서 주변에 키보드, 컵, 식물, 필기구, 케이블 등이 보임. 정면에 가까우며 주변 물체의 경계가 많음."
     },
     {
       "id": "complex_5",
       "path": "../data/complex_5.png",
       "condition": "complex",
+      "lighting": "uniform",
+      "angle": "front",
+      "background_complexity": "high",
       "notes": "밝은 무늬 배경 위에 밝은 문서가 놓여 있음. 정면에 가까우며 문서와 배경의 밝기 차이가 작음."
     },
     {
       "id": "shadow_1",
       "path": "../data/shadow_1.png",
       "condition": "shadow",
+      "lighting": "uneven",
+      "angle": "front",
+      "background_complexity": "low",
       "notes": "단순한 어두운 배경 위 정면에 가까운 문서. 왼쪽·아래쪽보다 오른쪽 위가 밝고 강한 반사로 일부 글자와 사진의 대비가 낮아짐."
     },
     {
       "id": "shadow_2",
       "path": "../data/shadow_2.png",
       "condition": "shadow",
+      "lighting": "uneven",
+      "angle": "front",
+      "background_complexity": "low",
       "notes": "단순한 어두운 배경 위 정면에 가까운 문서. 중앙 부근을 지나는 세로 방향의 명암 경계가 있고 왼쪽이 더 어두움."
     },
     {
       "id": "shadow_3",
       "path": "../data/shadow_3.png",
       "condition": "shadow",
+      "lighting": "uneven",
+      "angle": "front",
+      "background_complexity": "low",
       "notes": "단순한 어두운 배경 위 정면에 가까운 문서. 왼쪽 위에서 오른쪽 아래로 이어지는 대각선 명암 경계가 문서 내부를 가로지름."
     },
     {
       "id": "shadow_4",
       "path": "../data/shadow_4.png",
       "condition": "shadow",
+      "lighting": "uneven",
+      "angle": "front",
+      "background_complexity": "low",
       "notes": "단순한 어두운 배경 위 세로 영수증. 정면에 가까우며 영수증 중앙부터 아래쪽에 걸쳐 핸드폰을 쥔 사람 손 모양의 어두운 영역이 겹쳐 있음."
     },
     {
       "id": "shadow_5",
       "path": "../data/shadow_5.png",
       "condition": "shadow",
+      "lighting": "uneven",
+      "angle": "front",
+      "background_complexity": "low",
       "notes": "단순한 어두운 배경 위 정면에 가까운 문서. 중앙 부근의 세로 명암 경계를 기준으로 오른쪽 절반이 크게 어두워짐."
     },
     {
       "id": "simple_1",
       "path": "../data/simple_1.png",
       "condition": "simple",
+      "lighting": "uniform",
+      "angle": "front",
+      "background_complexity": "low",
       "notes": "단순한 어두운 배경 위 밝은 문서. 정면에 가깝고 문서가 거의 수직으로 배치되어 있으며 밝기가 비교적 균일함."
     },
     {
       "id": "simple_2",
       "path": "../data/simple_2.png",
       "condition": "simple",
+      "lighting": "uniform",
+      "angle": "front",
+      "background_complexity": "low",
       "notes": "단순한 어두운 배경 위 세로로 긴 영수증. 정면에 가까우며 밝은 영수증과 배경의 대비가 뚜렷함."
     },
     {
       "id": "simple_3",
       "path": "../data/simple_3.png",
       "condition": "simple",
+      "lighting": "uniform",
+      "angle": "front",
+      "background_complexity": "low",
       "notes": "단순한 어두운 배경 위 가로형 명함. 정면에 가까우며 밝기가 비교적 균일하고 명함과 배경의 대비가 뚜렷함."
     },
     {
       "id": "simple_4",
       "path": "../data/simple_4.png",
       "condition": "simple",
+      "lighting": "uniform",
+      "angle": "front",
+      "background_complexity": "low",
       "notes": "단순한 어두운 배경 위 밝은 문서. 화면 안에서 시계 방향으로 회전되어 있으며 밝기가 비교적 균일함."
     },
     {
       "id": "simple_5",
       "path": "../data/simple_5.png",
       "condition": "simple",
+      "lighting": "uniform",
+      "angle": "front",
+      "background_complexity": "low",
       "notes": "단순한 어두운 배경 위 밝은 문서. 위쪽 폭이 아래쪽보다 조금 좁은 약한 사다리꼴 형태이며 밝기가 비교적 균일함."
     },
     {
       "id": "tilted_1",
       "path": "../data/tilted_1.png",
       "condition": "tilted",
+      "lighting": "uneven",
+      "angle": "45deg+",
+      "background_complexity": "low",
       "notes": "단순한 어두운 배경 위 밝은 문서. 위쪽 폭이 아래쪽보다 좁은 사다리꼴 형태이며 종이 전반에 구김과 접힌 자국이 있고 외곽도 굴곡짐."
     },
     {
       "id": "tilted_2",
       "path": "../data/tilted_2.png",
       "condition": "tilted",
+      "lighting": "uniform",
+      "angle": "45deg+",
+      "background_complexity": "low",
       "notes": "단순한 어두운 배경 위 밝은 문서. 상하·좌우 변이 화면 축과 비스듬하고 양쪽 변의 기울기가 달라 비대칭 원근 왜곡이 보임."
     },
     {
       "id": "tilted_3",
       "path": "../data/tilted_3.png",
       "condition": "tilted",
+      "lighting": "uniform",
+      "angle": "45deg+",
+      "background_complexity": "low",
       "notes": "단순한 어두운 배경 위 밝은 문서. 회전과 비대칭 원근 왜곡이 있으며 왼쪽 아래 모서리와 인접한 외곽 일부가 소매와 팔에 가려짐."
     },
     {
       "id": "tilted_4",
       "path": "../data/tilted_4.png",
       "condition": "tilted",
+      "lighting": "uniform",
+      "angle": "45deg+",
+      "background_complexity": "low",
       "notes": "단순한 어두운 배경 위 세로 영수증. 위쪽 폭이 아래쪽보다 좁은 사다리꼴 형태로 원근 왜곡이 보임."
     },
     {
       "id": "tilted_5",
       "path": "../data/tilted_5.png",
       "condition": "tilted",
+      "lighting": "uniform",
+      "angle": "45deg+",
+      "background_complexity": "low",
       "notes": "단순한 어두운 배경 위 밝은 문서. 약 45° 이상 각도에서 촬영. 위쪽 폭이 아래쪽보다 좁고 세로 방향이 압축된 사다리꼴 형태로 원근 왜곡이 뚜렷함."
     }
   ]

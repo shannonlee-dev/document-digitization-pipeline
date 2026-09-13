@@ -54,7 +54,7 @@ python -m tools.evaluate --output outputs/evaluation --summarize
 python -m unittest discover -s tests -v
 ```
 
-`tools/manifest.json`의 이미지 20장을 세 가지 설정으로 비교합니다. 이미지별 밝기·배치·배경 메모도 이 파일에 있습니다. 네 꼭짓점 검출과 보정 결과를 직접 확인하세요. `detected`는 사각형 검출 여부이며, 성공 판정은 아닙니다.
+`tools/manifest.json`의 이미지 20장을 세 가지 설정으로 비교합니다. 이미지마다 `lighting`(조명: `uniform`/`uneven`), `angle`(촬영 각도: `front`/`45deg+`), `background_complexity`(배경 복잡도: `low`/`high`)를 기록하며 평가 CSV에도 저장합니다. `angle`은 촬영 조건 분류이며 실측값은 아닙니다. `front`는 정면에 가까운 촬영으로 화면 내 회전과 약한 원근 왜곡을 포함합니다. 반사·구김·가림 등의 상세 설명은 `notes`에 있습니다. 네 꼭짓점 검출과 보정 결과를 직접 확인하세요. `detected`는 사각형 검출 여부이며, 성공 판정은 아닙니다.
 
 집계는 `report.md`를 덮어씁니다. 분석 메모는 별도 파일에 보관하고, 재실험에는 새 출력 폴더를 사용하세요. 추가 옵션은 `python -m tools.evaluate --help`로 확인합니다.
 
