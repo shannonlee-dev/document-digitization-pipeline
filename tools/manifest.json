@@ -1,6 +1,6 @@
 {
   "provenance": "gpt-generated",
-  "description": "사용자가 GPT로 생성한 합성 이미지 20장. condition은 기존 파일명 분류를 유지하고, notes는 합성 이미지에서 관찰한 밝기·배치·배경을 기록함. tilted는 원근 왜곡 조건이며 실제 촬영 각도를 의미하지 않음.",
+  "description": "사용자가 생성한 이미지 20장. condition은 기존 파일명 분류를 유지하고, notes는 이미지에서 관찰한 밝기·배치·배경을 기록함. tilted는 원근 왜곡 조건이며 실제 촬영 각도를 의미하지 않음.",
   "images": [
     {
       "id": "complex_1",
