@@ -7,7 +7,7 @@ OpenCV와 NumPy로 문서 사진을 검출하고 원근 보정·이진화하는 
 ## 핵심 특징
 
 - 회색조 → Gaussian blur → Canny → 사각형 검출 → 투시 변환 → 적응형 이진화
-- 단계별 미리보기, 블러·Canny 트랙바, PNG 저장
+- 단계별 화면 표시, 블러·Canny 트랙바, PNG 저장
 - GUI 없는 환경의 파일 처리와 이미지 20장에 대한 설정 비교
 
 ## 아키텍처
@@ -76,7 +76,7 @@ python -m unittest discover -s tests -v
 
 평가 입력을 생략하면 기본값 `data/`에서 PNG/JPEG 20장을 파일명 순으로 읽습니다. 파일명의 첫 `_` 앞부분을 촬영 조건으로 사용합니다(예: `shadow_1.png` → `shadow`). JSON manifest나 다른 이미지 폴더도 첫 번째 인자로 지정할 수 있습니다. 각 이미지를 `default`(blur=5, Canny=50/150), `sensitive`(3, 10/40), `strict`(9, 100/220)로 처리합니다. `--epsilon-sweep`은 사각형 근사 비율 0.01, 0.02, 0.04, 0.06도 비교합니다.
 
-평가 폴더에는 `results.csv`, `parameters.json`, `eda.json`, `histograms.png`, `report.md`와 이미지별 단계·미리보기가 생성됩니다. 상세 결과는 생성된 `report.md`를 기준으로 확인합니다.
+평가 폴더에는 `results.csv`, `parameters.json`, `eda.json`, `histograms.png`, `report.md`와 이미지별 단계 이미지가 생성됩니다. 상세 결과는 생성된 `report.md`를 기준으로 확인합니다.
 
 성공 여부는 사람이 판정합니다. 각 결과의 `04_contours.png`, `05_warped.png`, `06_result.png`를 확인하고, **문서의 네 꼭짓점이 올바르게 검출되어 반듯하게 변환됐으면 성공**으로 기록합니다.
 

@@ -13,11 +13,10 @@ import numpy as np
 from scanner.constants import (
     GRAYSCALE_LEVELS,
     MAX_PIXEL_VALUE,
-    SCAN_STAGES,
     SUPPORTED_IMAGE_SUFFIXES,
 )
 from scanner.io import read_image, save_image, save_scan
-from scanner.pipeline import Parameters, Scan, scan
+from scanner.pipeline import Parameters, scan
 
 GROUPS = ('simple', 'shadow', 'tilted', 'complex')
 IMAGES_PER_GROUP = 5
@@ -39,12 +38,6 @@ HISTOGRAM_LEGEND_POSITION = (45, 30)
 HISTOGRAM_LEGEND_SPACING = 175
 HISTOGRAM_CAPTION_POSITION = (40, 380)
 
-PREVIEW_TILE_WIDTH = 320
-PREVIEW_TILE_HEIGHT = 250
-PREVIEW_HEADER_HEIGHT = 30
-PREVIEW_BACKGROUND = 245
-PREVIEW_COLUMNS = 3
-PREVIEW_LABEL_POSITION = (8, 20)
 PLOT_TEXT_SCALE = 0.5
 PLOT_TEXT_COLOR = (0, 0, 0)
 PLOT_TEXT_THICKNESS = 1
@@ -139,42 +132,6 @@ def _histogram_plot(histograms: Mapping[str, Sequence[np.ndarray]]) -> np.ndarra
     return canvas
 
 
-def _stage_preview(result: Scan) -> np.ndarray:
-    tiles = []
-    for name in SCAN_STAGES:
-        tile = np.full(
-            (PREVIEW_TILE_HEIGHT, PREVIEW_TILE_WIDTH, 3),
-            PREVIEW_BACKGROUND, np.uint8,
-        )
-        image = result.stages.get(name)
-        if image is not None:
-            if image.ndim == 2:
-                image = cv2.cvtColor(image, cv2.COLOR_GRAY2BGR)
-            scale = min(
-                PREVIEW_TILE_WIDTH / image.shape[1],
-                (PREVIEW_TILE_HEIGHT - PREVIEW_HEADER_HEIGHT) / image.shape[0],
-            )
-            image = cv2.resize(image, (
-                max(1, round(image.shape[1] * scale)),
-                max(1, round(image.shape[0] * scale)),
-            ))
-            tile[
-                PREVIEW_HEADER_HEIGHT:PREVIEW_HEADER_HEIGHT + image.shape[0],
-                :image.shape[1],
-            ] = image
-
-        cv2.putText(
-            tile, name if image is not None else name + ': missing', PREVIEW_LABEL_POSITION,
-            cv2.FONT_HERSHEY_SIMPLEX, PLOT_TEXT_SCALE, PLOT_TEXT_COLOR, PLOT_TEXT_THICKNESS,
-        )
-        tiles.append(tile)
-
-    return np.vstack((
-        np.hstack(tiles[:PREVIEW_COLUMNS]),
-        np.hstack(tiles[PREVIEW_COLUMNS:]),
-    ))
-
-
 def evaluate(
     manifest_path: Union[Path, str],
     output: Path,
@@ -219,10 +176,6 @@ def evaluate(
             })
 
             save_scan(result, case_output / preset)
-            save_image(
-                case_output / preset / 'preview.jpg',
-                _stage_preview(result),
-            )
 
     with (output / 'results.csv').open('w', newline='', encoding='utf-8') as stream:
         writer = csv.DictWriter(stream, fieldnames=list(rows[0]), lineterminator='\n')
