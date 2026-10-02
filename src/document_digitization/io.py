@@ -1,4 +1,5 @@
 """이미지를 읽고 스캔 단계를 PNG/JPEG 파일로 저장합니다."""
+
 from pathlib import Path
 from typing import TYPE_CHECKING, Union
 
@@ -19,29 +20,29 @@ if TYPE_CHECKING:
 def read_image(path: Union[Path, str]) -> np.ndarray:
     path = Path(path)
     if not path.is_file():
-        raise ValueError(f'Image does not exist: {path}')
+        raise ValueError(f"Image does not exist: {path}")
     image = cv2.imdecode(np.frombuffer(path.read_bytes(), dtype=np.uint8), cv2.IMREAD_COLOR)
     if image is None or min(image.shape[:2]) < MIN_IMAGE_SIZE:
-        raise ValueError(f'Not a readable image: {path}')
+        raise ValueError(f"Not a readable image: {path}")
     return image
 
 
 def save_image(path: Union[Path, str], image: np.ndarray) -> None:
     path = Path(path)
     if path.suffix.lower() not in SUPPORTED_IMAGE_SUFFIXES:
-        raise ValueError('Output must be PNG or JPEG')
+        raise ValueError("Output must be PNG or JPEG")
 
     ok, encoded = cv2.imencode(path.suffix, image)
     if not ok:
-        raise OSError(f'Image encoding failed: {path}')
+        raise OSError(f"Image encoding failed: {path}")
 
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_bytes(encoded.tobytes())
     if not path.is_file() or path.stat().st_size == 0:
-        raise OSError(f'Image save failed: {path}')
+        raise OSError(f"Image save failed: {path}")
 
 
-def save_scan(result: 'Scan', output: Union[Path, str]) -> None:
+def save_scan(result: "Scan", output: Union[Path, str]) -> None:
     output = Path(output)
     for name, image in result.stages.items():
         save_image(output / (name + STAGE_IMAGE_SUFFIX), image)

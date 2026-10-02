@@ -12,21 +12,39 @@
 
 ## 아키텍처
 
-```text
-이미지 → 회색조·블러 → Canny → 사각형 검출 → 원근 보정 → 이진화
+| 구성 요소 | 역할 |
+| --- | --- |
+| `src/document_digitization/pipeline.py` | 문서 경계 검출·원근 보정·이진화 |
+| `io.py` | 이미지 읽기와 단계별 결과 저장 |
+| `cli.py`, `gui.py` | 파일 실행과 OpenCV 트랙바 제어 |
+| `evaluation/` | 평가 처리·히스토그램·수동 판정 집계 |
+| `tools/manifest.json`, `data/` | 촬영 조건과 평가 원본 이미지 |
+| `outputs/evaluation/`, `docs/` | 기존 평가 결과와 분석 보고서 |
+
+```mermaid
+flowchart LR
+    Image[문서 사진] --> Preprocess[회색조와 블러]
+    Preprocess --> Canny[Canny 엣지]
+    Canny --> Contour[사각형 검출]
+    Contour --> Warp[원근 보정]
+    Warp --> Binary[적응형 이진화]
+    Controls[CLI와 GUI 제어] --> Preprocess
+    Binary --> Saved[단계별 이미지 저장]
+    Manifest[촬영 조건 manifest] --> Evaluation[수동 평가와 집계]
+    Saved --> Evaluation
+    Evaluation --> Report[분석 보고서]
 ```
 
-핵심 로직은 `scanner/pipeline.py`, 입출력은 `scanner/io.py`, 명령행 실행은 `scanner/cli.py`, GUI는 `scanner/gui.py`에 있습니다. 평가 도구도 같은 `scan()` 함수를 사용합니다.
+평가 도구는 GUI·CLI와 같은 `scan()` 함수를 사용합니다.
 
 ## 실행
 
 Python 3.8 이상.
 
 ```bash
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-python main.py --image data/simple_1.png
+make setup
+make check test smoke build
+uv run --frozen document-scan --image data/simple_1.png
 ```
 
 Windows에서는 가상환경을 `.venv\Scripts\activate`로 활성화합니다.
@@ -37,10 +55,10 @@ Windows에서는 가상환경을 `.venv\Scripts\activate`로 활성화합니다.
 
 ```bash
 # 화면 없이 처리하고 저장
-python main.py --image data/simple_1.png --headless --output outputs/scan
+uv run --frozen document-scan --image data/simple_1.png --headless --output outputs/scan
 
 # 전체 옵션
-python main.py --help
+uv run --frozen document-scan --help
 ```
 
 결과는 `outputs/scan/`에 단계별로 저장됩니다. 같은 경로는 덮어쓰며, 검출 실패 시 진단 이미지만 남기고 이전 보정·이진화 결과는 삭제합니다.
@@ -48,15 +66,15 @@ python main.py --help
 ## 평가와 테스트
 
 ```bash
-python -m tools.evaluate --output outputs/evaluation
+uv run --frozen document-evaluate --output outputs/evaluation
 # results.csv의 success에 true/false를 입력한 뒤 집계
-python -m tools.evaluate --output outputs/evaluation --summarize
-python -m unittest discover -s tests -v
+uv run --frozen document-evaluate --output outputs/evaluation --summarize
+make test
 ```
 
 `tools/manifest.json`의 이미지 20장을 세 가지 설정으로 비교합니다. 이미지마다 `lighting`(조명: `uniform`/`uneven`), `angle`(촬영 각도: `front`/`45deg+`), `background_complexity`(배경 복잡도: `low`/`high`)를 기록하며 평가 CSV에도 저장합니다. `angle`은 촬영 조건 분류이며 실측값은 아닙니다. `front`는 정면에 가까운 촬영으로 화면 내 회전과 약한 원근 왜곡을 포함합니다. 반사·구김·가림 등의 상세 설명은 `notes`에 있습니다. 네 꼭짓점 검출과 보정 결과를 직접 확인하세요. `detected`는 사각형 검출 여부이며, 성공 판정은 아닙니다.
 
-집계는 `report.md`를 덮어씁니다. 분석 메모는 별도 파일에 보관하고, 재실험에는 새 출력 폴더를 사용하세요. 추가 옵션은 `python -m tools.evaluate --help`로 확인합니다.
+집계는 `report.md`를 덮어씁니다. 분석 메모는 별도 파일에 보관하고, 재실험에는 새 출력 폴더를 사용하세요. 추가 옵션은 `uv run --frozen document-evaluate --help`로 확인합니다.
 
 ## 한계
 

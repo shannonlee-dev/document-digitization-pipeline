@@ -1,0 +1,33 @@
+[build-system]
+requires = ["hatchling>=1.27,<2"]
+build-backend = "hatchling.build"
+
+[project]
+name = "document-digitization-pipeline"
+version = "0.1.0"
+description = "OpenCV 문서 탐지·투시 변환·전처리를 CLI와 GUI로 실행하고 평가하는 문서 디지털화 파이프라인"
+readme = "README.md"
+requires-python = ">=3.8"
+dependencies = ["opencv-python>=4.5", "numpy>=1.20"]
+
+[project.scripts]
+document-scan = "document_digitization.cli:main"
+document-evaluate = "document_digitization.evaluation.evaluate:main"
+
+[dependency-groups]
+dev = ["pytest>=8,<9", "ruff>=0.11,<1"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/document_digitization"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "--import-mode=importlib --strict-markers"
+markers = ["smoke: 외부 서비스·원본 데이터 변경 없이 주요 실행 경로 검증"]
+
+[tool.ruff]
+target-version = "py38"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F", "I"]

@@ -7,9 +7,9 @@
 | [results.csv](../outputs/evaluation/results.csv), [report.md](../outputs/evaluation/report.md) | 이미지별 검출·성공 여부와 조건별 집계 |
 | [eda.json](../outputs/evaluation/eda.json), [histograms.png](../outputs/evaluation/histograms.png) | 원본의 밝기 통계와 조건별 밝기 분포 |
 | [manifest.json](../tools/manifest.json) | 이미지 경로, 조건 분류, 조명(`lighting`)·촬영 각도(`angle`)·배경 복잡도(`background_complexity`), 상세 메모 |
-| [parameters.json](../outputs/evaluation/parameters.json), [evaluation_constants.py](../tools/evaluation_constants.py) | 평가에 사용한 파라미터 |
-| [pipeline.py](../scanner/pipeline.py), [io.py](../scanner/io.py) | 전처리, 문서 검출, 원근 보정, 이진화, 단계별 저장 |
-| [evaluation_analysis.py](../tools/evaluation_analysis.py), [evaluate.py](../tools/evaluate.py) | EDA 계산과 평가 산출물 생성 방식 |
+| [parameters.json](../outputs/evaluation/parameters.json), [evaluation_constants.py](../src/document_digitization/evaluation/evaluation_constants.py) | 평가에 사용한 파라미터 |
+| [pipeline.py](../src/document_digitization/pipeline.py), [io.py](../src/document_digitization/io.py) | 전처리, 문서 검출, 원근 보정, 이진화, 단계별 저장 |
+| [evaluation_analysis.py](../src/document_digitization/evaluation/evaluation_analysis.py), [evaluate.py](../src/document_digitization/evaluation/evaluate.py) | EDA 계산과 평가 산출물 생성 방식 |
 
 실패 원인은 단계별 이미지와 contour 분석을 바탕으로 해석했다. blur와 Canny threshold 각각의 영향을 분리하는 통제 실험은 수행하지 않았다.
 
